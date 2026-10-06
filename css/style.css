@@ -637,8 +637,14 @@
     }
 
     /* ---------- Preview mode (JS `.print-preview` class on <body>) ---------- */
-    /* Freeze background animations + hide glow layers while the phone's print
-       preview sheet is open, so the page renders cleanly and stays readable. */
+    /* On phones, window.print() can be blocked entirely by the browser. The JS
+       now falls back to printing through an iframe / downloadable file, but if
+       the dialog does open we also mirror the print sheet in-screen while
+       `.print-preview` is active so nothing looks broken mid-preview. */
+    body.print-preview .tab-panel,
+    body.print-preview .tab-panel:not(.active) {
+      display: block !important;
+    }
     body.print-preview .bg-effect,
     body.print-preview .mist-container,
     body.print-preview .hearts-container {
@@ -657,6 +663,34 @@
     body.print-preview .log-header h1 i {
       animation: none !important;
     }
+
+    /* ---------- Print fallback overlay (shown when a phone blocks printing) --- */
+    #printFallback {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .print-fallback-box {
+      background: rgba(30, 18, 40, 0.96);
+      border: 1px solid rgba(200, 170, 220, 0.25);
+      border-radius: 14px;
+      padding: 22px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    }
+    .print-fallback-box h3 { color: #d4b0d8; margin-bottom: 10px; }
+    .print-fallback-box p { color: #c8bcd0; font-size: 0.9rem; margin-bottom: 14px; }
+    .print-fallback-box .btn { margin: 6px; }
+    .print-fallback-box .pf-hint { font-size: 0.78rem; color: #a898b0; margin-top: 10px; }
+    @media print { #printFallback, .print-fallback-box { display: none !important; } }
 
     /* Email HTML modal overlay */
     .email-modal {
