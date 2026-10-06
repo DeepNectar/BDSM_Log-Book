@@ -596,20 +596,51 @@
       showToast(`✅ Settings applied: ${deep} & ${honey}`);
     }
 
-    // ===== PRINT ALL DATA =====
+    // ===== PRINT ALL DATA (preview mode) =====
     function printAllData() {
       showToast('📄 Preparing print view...');
+
+      // 1. Reveal the main app even if the user somehow triggers this pre-unlock.
+      const mainApp = document.getElementById('mainApp');
+      if (mainApp && mainApp.style.display === 'none') {
+        mainApp.style.display = 'block';
+      }
+
+      // 2. Remember which tab was active so we can restore it after printing.
+      const activeTabBtn = document.querySelector('.tab-nav button.active');
+      const previousActivePanel = document.querySelector('.tab-panel.active');
+
+      // 3. Show every panel at once for the full preview/print sheet.
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('active'));
+
+      // 4. Deactivate all background animations while previewing — on phones,
+      //    animated layers render as smeared/garbled blobs in the print preview
+      //    and hurt readability of the transparent UI behind the sheet.
+      document.body.classList.add('print-preview');
+
+      const finishPrint = () => {
+        // Restore single-tab view and re-enable animations afterwards.
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        if (previousActivePanel) previousActivePanel.classList.add('active');
+        else if (activeTabBtn) {
+          const panel = document.getElementById('panel-' + activeTabBtn.dataset.tab);
+          if (panel) panel.classList.add('active');
+        }
+        document.body.classList.remove('print-preview');
+      };
+
+      // Give layout one frame to settle before opening the preview dialog.
       setTimeout(() => {
-        window.print();
-        setTimeout(() => {
-          document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-          const activeTab = document.querySelector('.tab-nav button.active');
-          if (activeTab) {
-            document.getElementById('panel-' + activeTab.dataset.tab).classList.add('active');
-          }
-        }, 500);
-      }, 300);
+        try {
+          window.print();
+        } catch (e) {
+          console.warn('window.print() failed:', e);
+        }
+        // Some mobile browsers fire 'afterprint' late or never, so also
+        // restore via a safety timeout; restoring twice is harmless.
+        window.addEventListener('afterprint', finishPrint, { once: true });
+        setTimeout(finishPrint, 1500);
+      }, 350);
     }
 
     // ===== GENERATE EMAIL HTML =====

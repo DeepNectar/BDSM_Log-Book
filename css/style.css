@@ -177,6 +177,8 @@
       background: rgba(20, 10, 25, 0.07);
       backdrop-filter: blur(2px) saturate(180%);
       -webkit-backdrop-filter: blur(2px) saturate(180%);
+      /* Keep text crisp over the animated background on phones */
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.65);
       border: 1px solid rgba(200, 120, 180, 0.15);
       border-radius: 40px;
       padding: 30px 25px;
@@ -525,6 +527,82 @@
       100% { opacity: 1; transform: translateY(0); }
     }
 
+    /* ---------- Preview / print mode (window.print on phones & desktops) ---------- */
+    /* Fix: in preview mode the app must be fully readable inside the phone's
+       print/preview sheet. Force an opaque white paper look and hide all
+       animated background layers, regardless of the 93%-transparent UI theme. */
+    @media print {
+      html, body {
+        background: #ffffff !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+      /* Hide every decorative/animated layer so nothing bleeds into the preview */
+      .bg-effect, .glow-layer, .mist-container, .hearts-container, .sparkle,
+      #passwordOverlay, .toast, .tab-nav, .btn, .btn-group, .footer-note,
+      #syncBadgeWrap, .email-modal { display: none !important; }
+      /* Reset the transparent glass theme to solid printable paper */
+      .log-container {
+        display: block !important;
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        text-shadow: none !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+        color: #222 !important;
+        animation: none !important;
+      }
+      .tab-panel,
+      .tab-panel:not(.active),
+      .tab-panel.active {
+        display: block !important;
+        page-break-inside: avoid;
+        margin-bottom: 24px;
+      }
+      .table-wrap {
+        background: #ffffff !important;
+        border: 1px solid #bbb !important;
+        border-radius: 6px !important;
+        overflow: visible !important;
+      }
+      table { min-width: 0 !important; font-size: 11px !important; }
+      th {
+        background: #e8e0f0 !important;
+        color: #222 !important;
+        border-bottom: 2px solid #6a3f7a !important;
+        padding: 4px 6px !important;
+      }
+      td {
+        color: #222 !important;
+        border-bottom: 1px solid #ddd !important;
+        padding: 4px 6px !important;
+      }
+      td input, td select, td textarea {
+        background: transparent !important;
+        border: 1px solid #ccc !important;
+        color: #222 !important;
+        text-shadow: none !important;
+        padding: 3px 5px !important;
+        font-size: 11px !important;
+      }
+      .tab-panel h3, .tab-panel h4, .log-header h1, .log-header .sub,
+      .stamp-caption, .sign-off-overlay div, .sign-off-overlay span {
+        color: #222 !important;
+        background: none !important;
+        -webkit-background-clip: unset !important;
+        background-clip: unset !important;
+        text-shadow: none !important;
+      }
+      .brand-logo, .love-stamp, .sign-off-stamp {
+        filter: none !important;
+        animation: none !important;
+      }
+    }
+
     /* Print styles */
     @media print {
       body { background: white; padding: 0; }
@@ -556,6 +634,28 @@
       td input:focus, td select:focus, td textarea:focus { box-shadow: none; }
       .tab-panel h3, .tab-panel h4 { color: #333; }
       .log-container .btn { display: none; }
+    }
+
+    /* ---------- Preview mode (JS `.print-preview` class on <body>) ---------- */
+    /* Freeze background animations + hide glow layers while the phone's print
+       preview sheet is open, so the page renders cleanly and stays readable. */
+    body.print-preview .bg-effect,
+    body.print-preview .mist-container,
+    body.print-preview .hearts-container {
+      animation: none !important;
+    }
+    body.print-preview .glow-layer,
+    body.print-preview .sparkle,
+    body.print-preview .heart-particle,
+    body.print-preview .mist-particle {
+      animation-play-state: paused !important;
+    }
+    body.print-preview .log-container,
+    body.print-preview .brand-logo,
+    body.print-preview .love-stamp,
+    body.print-preview .sign-off-stamp,
+    body.print-preview .log-header h1 i {
+      animation: none !important;
     }
 
     /* Email HTML modal overlay */
@@ -728,6 +828,37 @@
       .log-container {
         padding: 16px 10px;
         border-radius: 20px;
+      }
+      /* Preview readability fix: the container is 93% transparent, which makes
+         dense table content hard to read on small phone screens. Give the
+         interactive surfaces their own slightly-opaque dark layer so text
+         stays crisp while the animated background still shows around it. */
+      .table-wrap {
+        background: rgba(10, 6, 14, 0.72);
+        border: 1px solid rgba(200, 170, 220, 0.14);
+      }
+      th {
+        background: rgba(60, 40, 80, 0.85);
+      }
+      td input, td select, td textarea {
+        background: rgba(16, 10, 22, 0.85);
+        color: #f5eef8;
+      }
+      .tab-nav button {
+        background: rgba(30, 20, 40, 0.78);
+      }
+      .btn {
+        background: rgba(50, 34, 66, 0.78);
+      }
+      .sync-badge {
+        background: rgba(30, 20, 40, 0.78);
+      }
+      .footer-note,
+      .tab-panel#panel-final .stamp-overlay {
+        background: rgba(12, 8, 16, 0.6);
+        border-radius: 18px;
+        padding-left: 10px;
+        padding-right: 10px;
       }
       .log-header {
         padding-bottom: 12px;
