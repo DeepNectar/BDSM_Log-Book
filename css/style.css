@@ -1281,35 +1281,28 @@
       margin-bottom: 8px;
     }
 
-    /* "Behind text" picture format: the stamp floats as a background-style
-       picture BEHIND the sign-off text (lower z-index, no space reserved),
-       while the text stays readable on top of it. Same effect in print/PDF. */
+    /* Love stamp in the sign-off area: back to NORMAL size/format — same as the
+       footer love stamp (normal in-flow image, own row above the sign-off text).
+       Only its SIZE was ever requested to change; now restored to normal. */
     .sign-off-stamp {
-      position: absolute;        /* float behind the text, like Word's "Behind Text" */
-      top: 0;                    /* stays inside the sign-off area only */
-      left: 79%;                 /* shifted further to the right side of the sign-off area */
-      transform: translateX(-50%) rotate(-4deg);
-      width: 720px;              /* PDF: INCREASED again (was 560px) */
-      height: 320px;             /* stamp art is 1536x1024 — keep native aspect ratio */
+      display: block;
+      margin: 0 auto 10px auto;
+      width: 300px;              /* normal size (identical to .love-stamp) */
+      height: 134px;             /* stamp art is 1536x1024 — keep native aspect ratio */
       object-fit: contain;
-      opacity: 1;                /* fully visible */
-      z-index: 0;                /* behind the text (h4 / sig blocks use z-index:1) */
-      pointer-events: none;      /* purely decorative — never blocks the text */
+      transform: rotate(-4deg);
+      opacity: 1;
       filter: drop-shadow(0 0 14px rgba(230, 90, 160, 0.35)) contrast(1.1) saturate(1.15);
     }
-    /* The sign-off overlay always reserves room for the stamp so it can never
-       spill outside the sign-off area, on screen and in the PDF alike. */
-    .sign-off-overlay { min-height: 330px; }
     @media print {
-      .sign-off-stamp { filter: none !important; }   /* plain ink behind text on paper */
+      .sign-off-stamp { filter: none !important; }   /* plain ink on paper */
     }
 
     @media (max-width: 550px) {
       /* ENLARGED: bigger Soulmate logo on phones */
       .brand-logo { width: 190px; height: 190px; margin-bottom: 10px; }
       .love-stamp { width: 210px; height: 94px; }
-      .sign-off-stamp { width: 450px; height: 201px; }  /* scaled down for phones, still larger than before */
-      .sign-off-overlay { min-height: 210px; }
+      .sign-off-stamp { width: 210px; height: 94px; }  /* normal phone size, same as .love-stamp */
       .password-box .brand-logo { width: 160px; height: 160px; }
     }
 
@@ -1328,10 +1321,10 @@
     }
     .sig-img {
       display: block;
-      max-height: 56px;          /* fits inside the print sheet on iPhones too */
+      max-height: 96px;          /* INCREASED sign image size (was 56px) */
       height: auto;
       width: auto;
-      max-width: 220px;
+      max-width: 380px;          /* INCREASED sign image size (was 220px) */
       margin: 0 auto -10px auto; /* ink overlaps the dotted line from above */
       background: transparent;
       pointer-events: none;
@@ -1346,6 +1339,6 @@
       white-space: nowrap;
     }
     @media print {
-      .sig-img { max-height: 48px !important; }
+      .sig-img { max-height: 84px !important; }   /* INCREASED in PDF too (was 48px) */
       .sig-label, .sig-line, .sig-date { color: #333 !important; }
     }
