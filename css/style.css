@@ -499,7 +499,7 @@
       letter-spacing: 1px;
       border-top: 1px solid rgba(200, 170, 220, 0.06);
       padding-top: 18px;
-      padding-bottom: 70px;      /* room for the absolutely-positioned love stamp */
+      padding-bottom: 20px;
     }
     .footer-note i { color: #b080c0; }
 
@@ -1039,52 +1039,39 @@
       animation: heartBeat 3s ease-in-out infinite;
     }
 
-    /* Stamp = semi-transparent image BEHIND the text, like a real stamp */
+    /* Stamp = normal (in-flow) image displayed ABOVE its caption so it's fully visible */
     .stamp-overlay {
       position: relative;
-      overflow: hidden;
+      text-align: center;
     }
 
     .love-stamp {
-      position: absolute;
-      top: 50%;
-      left: 50%;
+      display: block;
+      margin: 0 auto 10px auto;
       width: 210px;
       height: 140px;             /* stamp art is 600x400 — keep native aspect ratio */
       object-fit: contain;
-      transform: translate(-50%, -50%) rotate(-12deg);
-      opacity: 0.95;             /* fully visible so it reads clearly on the dark site */
-      z-index: 0;
-      pointer-events: none;
+      transform: rotate(-4deg);
+      opacity: 1;                /* fully visible normal image format */
       filter: drop-shadow(0 0 14px rgba(230, 90, 160, 0.35)) contrast(1.1) saturate(1.15);
     }
 
     .stamp-caption {
-      position: relative;
-      z-index: 1;
       text-align: center;
-      color: #b09ab8;
-      font-size: 0.75rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    .footer-note .footer-text {
-      position: relative;
-      z-index: 1;
+      color: #d4b0d8;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
     }
 
     .sign-off-stamp {
-      position: absolute;
-      top: 50%;
-      left: 50%;
+      display: block;
+      margin: 0 auto 10px auto;
       width: 190px;
       height: 127px;             /* stamp art is 600x400 — keep native aspect ratio */
       object-fit: contain;
-      transform: translate(-50%, -50%) rotate(-10deg);
-      opacity: 0.95;             /* fully visible so it reads clearly on the dark site */
-      z-index: 0;
-      pointer-events: none;
+      transform: rotate(-4deg);
+      opacity: 1;                /* fully visible normal image format */
       filter: drop-shadow(0 0 14px rgba(230, 90, 160, 0.35)) contrast(1.1) saturate(1.15);
     }
 
