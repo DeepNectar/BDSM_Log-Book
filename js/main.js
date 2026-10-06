@@ -922,7 +922,7 @@
     <strong>📧 Subject:</strong> ${subject}
   </div>
   
-  <img src="https://lh3.googleusercontent.com/d/1eoI5L95RQxWzs0yaDrFMtst2FFsbK_Ny" alt="Soulmate Logo" style="display:block; margin:0 auto 12px auto; width:90px; height:90px; object-fit:contain; border-radius:50%; background:#f7eef9; padding:8px; border:1px solid #d8b8e0;">
+  <img src="https://lh3.googleusercontent.com/d/1eoI5L95RQxWzs0yaDrFMtst2FFsbK_Ny" alt="Soulmate Logo" style="display:block; margin:0 auto 12px auto; width:140px; height:140px; object-fit:contain; border-radius:50%; background:#f7eef9; padding:8px; border:1px solid #d8b8e0;">
   <h1>❤️ ${deep.toUpperCase()} & ${honey.toUpperCase()} ❤️</h1>
   <p style="text-align:center; color:#7a6a82; font-size:16px; letter-spacing:2px;">BDSM Contract Log Book</p>
 
@@ -947,7 +947,7 @@
 
   <div style="margin-top:30px; border-top:2px solid #e8d5f0; padding-top:20px;">
     <h2>✍️ Sign‑off</h2>
-    <img src="https://raw.githubusercontent.com/DeepNectar/soulmate-log-book/main/assets/love-stamp.png" alt="Love Stamp" style="display:block; margin:0 auto 12px auto; width:80px; height:80px; object-fit:contain;">
+    <img src="https://lh3.googleusercontent.com/d/1xT4SnUR8dtEHP14MUMFZnYZnumAS96Fw" alt="Love Stamp" style="display:block; margin:0 auto 12px auto; width:80px; height:80px; object-fit:contain;">
     <div class="signature">
       <div><strong>${deep}'s Signature:</strong><br><img src="https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq32eCW-ZxMasj" alt="${deep}'s Signature" style="display:block; max-height:60px; margin:4px 0 -14px 4px;"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</div>
       <div><strong>${honey}'s Signature:</strong><br><img src="https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI" alt="${honey}'s Signature" style="display:block; max-height:60px; margin:4px 0 -14px 4px;"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</div>

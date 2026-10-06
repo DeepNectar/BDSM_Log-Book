@@ -38,7 +38,7 @@ Local preview: `python3 -m http.server 8000` then open http://localhost:8000
 | Deep's Signature | `https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq32eCW-ZxMasj` (Drive file `1KnoE8uWAwugB0PRMiPmq32eCW-ZxMasj`) | Sign-off section, email export |
 | Honey's Signature | `https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI` (Drive file `1HRoqjVvSDswlROnookv0ykGagHwLQ6FI`) | Sign-off section, email export |
 
-> Note: The love stamp is now served from the repo itself (`assets/love-stamp.png`) so it always renders on the deployed site — no dependence on Google Drive redirects or sharing permissions. The email export references it via the repo's raw GitHub URL because email clients can't load relative paths.
+> Note: The love stamp is now served from the repo itself (`assets/love-stamp.png`) so it always renders on the deployed site — no dependence on Google Drive redirects or sharing permissions. For the email export it uses the Drive direct-thumbnail URL (`https://lh3.googleusercontent.com/d/1xT4SnUR8dtEHP14MUMFZnYZnumAS96Fw`) because email clients can't load relative paths, and the previous raw-GitHub URL was returning 404 (the file was never pushed to that GitHub repo) — which is why the stamp wasn't appearing in the HTML email copy.
 
 > Note: Google Drive `/file/view` links don't render in `<img>` tags — the direct-thumbnail format above is used instead. Make sure the Drive file sharing is set to **"Anyone with the link"**.
 

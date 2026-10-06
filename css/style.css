@@ -1194,8 +1194,8 @@
     .brand-logo {
       display: block;
       margin: 0 auto 14px auto;
-      width: 150px;
-      height: 150px;
+      width: 200px;
+      height: 200px;
       object-fit: contain;
       border-radius: 50%;
       background: transparent;   /* no white box behind the logo */
@@ -1242,7 +1242,7 @@
     }
 
     @media (max-width: 550px) {
-      .brand-logo { width: 104px; height: 104px; margin-bottom: 10px; }
+      .brand-logo { width: 140px; height: 140px; margin-bottom: 10px; }
       .love-stamp { width: 210px; height: 94px; }
       .sign-off-stamp { width: 200px; height: 88px; }
       .password-box .brand-logo { width: 120px; height: 120px; }
