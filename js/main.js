@@ -16,6 +16,12 @@
 
     let isSyncing = false;
     let lastSyncTime = null;
+    let unsavedChanges = false;   // true when data changed since the last cloud save
+
+    // Auto-sync interval: push pending changes to the cloud every 15 minutes
+    // (within your requested 15–20 minute window). Sync also happens whenever
+    // you press "Save Data" and whenever the site is reopened/unlocked.
+    const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
     // The list of all sheet bodies your app uses
     const SHEET_IDS = [
@@ -47,6 +53,11 @@
     }
     setInterval(updateLastSyncInfo, 5000);
 
+    // ---- Mark data as changed (used by the 15-min auto-sync timer) ----
+    function markDirty() {
+      unsavedChanges = true;
+    }
+
     // ---- PUSH: send all sheets to cloud ----
     async function pushAllToCloud() {
       if (!supabaseClient) return false;
@@ -73,14 +84,8 @@
           return false;
         }
 
-        try {
-          const data = {};
-          SHEET_IDS.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) data[id] = el.innerHTML;
-          });
-          localStorage.setItem('bdsm_log_data', JSON.stringify(data));
-        } catch (e) {}
+        // Cloud save succeeded — no local copy is kept (cloud-only storage).
+        unsavedChanges = false;
 
         lastSyncTime = Date.now();
         setSyncStatus('online', 'synced');
@@ -118,49 +123,63 @@
       }
     }
 
-    // ---- AUTO-SYNC: check for changes every 10s ----
+    // ---- AUTO-SYNC: every 15 minutes, push any new/changed data to the cloud.
+    // It does NOT sync on every keystroke — only on this timer, on "Save Data",
+    // and when the site is reopened (pull) or brought back to the foreground.
     function startAutoSync() {
       setInterval(async () => {
-        if (isSyncing || !supabaseClient || document.hidden) return;
-        if (!document.getElementById('mainApp') ||
-            document.getElementById('mainApp').style.display === 'none') return;
+        if (isSyncing || !supabaseClient) return;
+        const mainApp = document.getElementById('mainApp');
+        if (!mainApp || mainApp.style.display === 'none') return;
+        if (document.hidden) return;            // wait until tab is visible again
+        if (!unsavedChanges) return;            // nothing new since last save
+        await pushAllToCloud();
+      }, AUTO_SYNC_INTERVAL_MS);
 
-        const before = SHEET_IDS.map(id => {
-          const el = document.getElementById(id);
-          return el ? el.innerHTML : '';
-        }).join('||');
-
-        const pulled = await pullAllFromCloud();
-        if (!pulled) return;
-
-        const after = SHEET_IDS.map(id => pulled[id] || '').join('||');
-        if (before !== after && Object.keys(pulled).length > 0) {
-          SHEET_IDS.forEach(id => {
-            const el = document.getElementById(id);
-            if (el && pulled[id] !== undefined) {
-              el.innerHTML = pulled[id];
-            }
-          });
-          lastSyncTime = Date.now();
-          setSyncStatus('online', 'synced');
-          showToast('🔄 Updated from cloud');
+      // When you come back to an already-open tab, re-sync both ways:
+      // push local pending changes, then pull anything saved elsewhere.
+      document.addEventListener('visibilitychange', async () => {
+        if (document.hidden || isSyncing || !supabaseClient) return;
+        const mainApp = document.getElementById('mainApp');
+        if (!mainApp || mainApp.style.display === 'none') return;
+        if (unsavedChanges) {
+          await pushAllToCloud();
+        } else {
+          await pullIntoSheets(true);
         }
-      }, 10000);
+      });
     }
 
-    // ---- FORCE SYNC button ----
+    // ---- Pull cloud data into the sheet bodies (used on reopen & force sync) ----
+    async function pullIntoSheets(silentIfEmpty) {
+      const pulled = await pullAllFromCloud();
+      if (!pulled || Object.keys(pulled).length === 0) {
+        if (!silentIfEmpty) showToast('☁️ No cloud data yet');
+        return false;
+      }
+      SHEET_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el || pulled[id] === undefined) return;
+        // Never overwrite the field the user is currently typing in.
+        if (activeEditEl && el.contains(activeEditEl)) return;
+        el.innerHTML = pulled[id];
+      });
+      lastSyncTime = Date.now();
+      unsavedChanges = false;
+      setSyncStatus('online', 'synced');
+      return true;
+    }
+
+    // ---- FORCE SYNC button (pull latest from cloud) ----
     async function forceSync() {
       showToast('🔄 Syncing...');
-      const pulled = await pullAllFromCloud();
-      if (pulled) {
-        SHEET_IDS.forEach(id => {
-          const el = document.getElementById(id);
-          if (el && pulled[id] !== undefined) {
-            el.innerHTML = pulled[id];
-          }
-        });
-        lastSyncTime = Date.now();
-        setSyncStatus('online', 'synced');
+      if (!supabaseClient) {
+        setSyncStatus('offline', 'no cloud');
+        showToast('⚠️ Cloud not configured');
+        return;
+      }
+      const ok = await pullIntoSheets(false);
+      if (ok) {
         showToast('☁️ Synced from cloud!');
       } else {
         setSyncStatus('offline', 'sync failed');
@@ -168,9 +187,60 @@
       }
     }
 
-    // ---- INIT CLOUD SYNC ----
+    // ---- CLEAR ALL DATA FROM THE CLOUD ----
+    // Permanently deletes every saved row from the Supabase table, resets all
+    // sheets in the UI to blank rows, and stops any pending auto-sync from
+    // re-uploading the old data. This action cannot be undone.
+    async function clearAllCloudData() {
+      if (!supabaseClient) {
+        showToast('⚠️ Cloud not configured — cannot clear');
+        return;
+      }
+      const ok = confirm(
+        '🗑️ CLEAR ALL DATA FROM THE CLOUD\n\n' +
+        'This permanently deletes ALL saved data for every tab from the cloud.\n' +
+        'It cannot be undone.\n\n' +
+        'Are you absolutely sure? (Press OK to delete everything)'
+      );
+      if (!ok) return;
+
+      const sure2 = confirm('⚠️ Final confirmation:\nDelete ALL cloud data right now?');
+      if (!sure2) return;
+
+      setSyncStatus('syncing', 'clearing...');
+      try {
+        // Delete every row in the table (anon key is scoped to this one table).
+        const { error } = await supabaseClient
+          .from('log_book_data')
+          .delete()
+          .neq('sheet_name', '__never_matches__');   // matches all rows
+
+        if (error) {
+          console.warn('Cloud delete error:', error);
+          setSyncStatus('offline', 'clear failed');
+          showToast('⚠️ Could not clear cloud data: ' + error.message);
+          return;
+        }
+
+        // Reset the UI to blank tables so nothing stale remains on screen.
+        initTables();
+
+        // Keep the timer from pushing anything back up automatically.
+        unsavedChanges = false;
+        lastSyncTime = Date.now();
+        setSyncStatus('online', 'cleared');
+        showToast('🗑️ All cloud data deleted. Tables are blank now.');
+      } catch (e) {
+        console.error('clearAllCloudData failed:', e);
+        setSyncStatus('offline', 'clear failed');
+        showToast('⚠️ Clear failed: ' + e.message);
+      }
+    }
+
+    // ---- INIT CLOUD SYNC (runs when the site is reopened & unlocked) ----
     async function initCloudSync() {
-      loadSavedData();
+      // One-time cleanup: remove any old local copy so NO data stays on device.
+      try { localStorage.removeItem('bdsm_log_data'); } catch (e) {}
 
       if (!supabaseClient) {
         setSyncStatus('offline', 'no cloud');
@@ -188,6 +258,7 @@
           }
         });
         lastSyncTime = Date.now();
+        unsavedChanges = false;
         setSyncStatus('online', 'synced');
         showToast('☁️ Loaded from cloud!');
       } else {
@@ -354,7 +425,7 @@
       document.getElementById('weeklyBody').innerHTML = rowWeekly('Week 1');
       renderFinal();
       renderSettings();
-      setTimeout(loadSavedData, 200);
+      // No local loading — data comes only from the cloud (initCloudSync).
     }
 
     // ===== ROW GENERATORS =====
@@ -447,6 +518,7 @@
       const entry = map[sheet];
       if (entry) {
         document.getElementById(entry.body).innerHTML += entry.fn();
+        markDirty();
         showToast('✅ Row added!');
       }
     }
@@ -455,55 +527,46 @@
       const d = new Date().toLocaleDateString('en-US', { month:'short', day:'2-digit', year:'numeric' });
       const list = targetId.includes('dominant') ? LISTS.honeyFeedback : LISTS.feedbackPraise;
       document.getElementById(targetId).innerHTML += `<tr><td><input type="text" value="${d}"></td><td>${makeSelect(list)}</td></tr>`;
+      markDirty();
       showToast('✅ Feedback row added!');
     }
 
-    // ===== SAVE DATA =====
-    function saveAllData() {
+    // ===== SAVE DATA (cloud only — nothing is stored on the device) =====
+    async function saveAllData() {
       try {
-        const tables = ['dailyBody','dailyFeedbackBody','dominantBody','dominantFeedbackBody','bonusBody','sceneBody','toyBody','debriefBody','weeklyBody'];
-        const data = {};
-        tables.forEach(id => {
-          const el = document.getElementById(id);
-          if (el) data[id] = el.innerHTML;
-        });
-        const finalBody = document.getElementById('finalBody');
-        if (finalBody) data['finalBody'] = finalBody.innerHTML;
-        const settingsBody = document.getElementById('settingsBody');
-        if (settingsBody) data['settingsBody'] = settingsBody.innerHTML;
-        localStorage.setItem('bdsm_log_data', JSON.stringify(data));
-        showToast('💾 All data saved successfully!');
-        
-        // ⬅️ NEW: Also push to cloud (async, fire-and-forget)
-        pushAllToCloud();
+        if (!supabaseClient) {
+          showToast('⚠️ Cloud not configured — cannot save');
+          return;
+        }
+        showToast('💾 Saving to cloud...');
+        const ok = await pushAllToCloud();
+        if (ok) {
+          showToast('💾 All data saved to cloud!');
+        } else {
+          showToast('⚠️ Save failed — check your connection and try again');
+        }
       } catch(e) {
         showToast('⚠️ Save error: ' + e.message);
       }
     }
-    // ===== LOAD SAVED DATA =====
-    function loadSavedData() {
-      try {
-        const raw = localStorage.getItem('bdsm_log_data');
-        if (!raw) return;
-        const data = JSON.parse(raw);
-        const tables = ['dailyBody','dailyFeedbackBody','dominantBody','dominantFeedbackBody','bonusBody','sceneBody','toyBody','debriefBody','weeklyBody'];
-        tables.forEach(id => {
-          if (data[id]) {
-            const el = document.getElementById(id);
-            if (el) el.innerHTML = data[id];
-          }
-        });
-        if (data['finalBody']) {
-          const el = document.getElementById('finalBody');
-          if (el) el.innerHTML = data['finalBody'];
-        }
-        if (data['settingsBody']) {
-          const el = document.getElementById('settingsBody');
-          if (el) el.innerHTML = data['settingsBody'];
-        }
-        showToast('📂 Saved data loaded');
-      } catch(e) { /* ignore */ }
+
+    // ===== TRACK EDITS =====
+    // Any typing/selection change marks data as "pending" so the 15-minute
+    // auto-sync timer knows there is something new to push to the cloud.
+    // Uses event delegation on document, so it also covers rows added later
+    // and fields loaded from the cloud. Inputs are protected from being
+    // wiped by a background pull while you are actively typing in one.
+    let activeEditEl = null;
+    function isInSheet(target) {
+      if (!target || !target.closest) return false;
+      return !!target.closest('#' + SHEET_IDS.join(', #'));
     }
+    document.addEventListener('input',  (e) => { if (isInSheet(e.target)) markDirty(); }, true);
+    document.addEventListener('change', (e) => { if (isInSheet(e.target)) markDirty(); }, true);
+    document.addEventListener('focusin',  (e) => { activeEditEl = isInSheet(e.target) ? e.target : null; });
+    document.addEventListener('focusout', () => { activeEditEl = null; });
+
+    // No local storage loading anymore — all data lives in the cloud.
 
     // ===== FINAL SUMMARY =====
     function renderFinal() {
@@ -594,53 +657,181 @@
         }
       }
       showToast(`✅ Settings applied: ${deep} & ${honey}`);
+      markDirty();   // settings changes also get saved to the cloud
     }
 
-    // ===== PRINT ALL DATA (preview mode) =====
-    function printAllData() {
-      showToast('📄 Preparing print view...');
+    // ===== PRINT ALL DATA (preview mode) — MOBILE-SAFE VERSION =====
+    // Fix for phones: iOS Safari and many Android browsers silently ignore
+    // window.print() when it is called from inside a setTimeout (the user-gesture
+    // context is lost). The old code deferred the call by 350ms, which is exactly
+    // why the button did nothing on mobile. Now we:
+    //   1. prepare the sheet with pure CSS (body.print-preview + @media print),
+    //   2. call window.print() SYNCHRONOUSLY inside the tap handler,
+    //   3. fall back to an invisible iframe print if the dialog never opens,
+    //   4. offer "Download HTML" as a guaranteed last resort.
+    let printRestoreTimer = null;
 
-      // 1. Reveal the main app even if the user somehow triggers this pre-unlock.
+    function schedulePrintRestore() {
+      clearTimeout(printRestoreTimer);
+      printRestoreTimer = setTimeout(finishPrintUI, 8000);
+    }
+
+    function finishPrintUI() {
+      clearTimeout(printRestoreTimer);
+      document.body.classList.remove('print-preview');
+      const overlay = document.getElementById('printFallback');
+      if (overlay) overlay.remove();
+    }
+
+    function showPrintFallbackOverlay() {
+      if (document.getElementById('printFallback')) return;
+      const div = document.createElement('div');
+      div.id = 'printFallback';
+      div.innerHTML =
+        '<div class="print-fallback-box">' +
+          '<h3>&#128196; Print / Save as PDF</h3>' +
+          '<p>Your browser blocked direct printing (common on phones). ' +
+          'Choose one of these options:</p>' +
+          '<button class="btn btn-danger" id="pfRetry"><i class="fas fa-print"></i> Try Printing Again</button>' +
+          '<button class="btn btn-success" id="pfDownload"><i class="fas fa-download"></i> Download HTML File</button>' +
+          '<p class="pf-hint">After downloading, open the file and use your browser menu \u2192 Print \u2192 Save as PDF.</p>' +
+          '<button class="btn btn-primary" id="pfClose">Close</button>' +
+        '</div>';
+      document.body.appendChild(div);
+
+      document.getElementById('pfRetry').onclick = () => {
+        div.remove();
+        try { window.print(); } catch (e) {}
+        schedulePrintRestore();
+        setTimeout(showPrintFallbackOverlay, 1200);
+      };
+      document.getElementById('pfDownload').onclick = downloadPrintHTML;
+      document.getElementById('pfClose').onclick = () => {
+        div.remove();
+        document.body.classList.remove('print-preview');
+      };
+    }
+
+    // Build a fully self-contained printable HTML document (inlined styles,
+    // white paper look, input values replaced with readable text spans).
+    function buildPrintDocumentHTML() {
+      const clone = document.body.cloneNode(true);
+      ['#passwordOverlay', '.email-modal', '#toast', '#syncBadgeWrap',
+       '.bg-effect', '.mist-container', '.hearts-container', '.tab-nav',
+       '#printFallback'].forEach(sel => {
+        clone.querySelectorAll(sel).forEach(el => el.remove());
+      });
+      clone.querySelectorAll('.btn, .btn-group').forEach(el => el.remove());
+      clone.querySelectorAll('.tab-panel').forEach(p => p.classList.add('active'));
+
+      clone.querySelectorAll('input, select, textarea').forEach(el => {
+        const val = el.value || '';
+        const span = document.createElement('span');
+        span.className = 'pv-val';
+        span.textContent = val;
+        el.replaceWith(span);
+      });
+
+      const styleText = Array.from(document.querySelectorAll('style'))
+        .map(s => s.textContent).join('\n');
+
+      return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+        '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+        '<title>Log Book \u2014 Print</title><style>' + styleText + '\n' +
+        '@media print{html,body{background:#fff!important}.log-container{background:#fff!important;color:#222!important;text-shadow:none!important}}' +
+        '.pv-val{border-bottom:1px solid #bbb;display:inline-block;min-width:60px}' +
+        '</style></head><body class="print-preview">' + clone.innerHTML + '</body></html>';
+    }
+
+    function downloadPrintHTML() {
+      try {
+        const html = buildPrintDocumentHTML();
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'log-book-print.html';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 500);
+        showToast('\u2B07\uFE0F Downloaded! Open it, then Print \u2192 Save as PDF.');
+      } catch (e) {
+        showToast('\u26A0\uFE0F Download failed: ' + e.message);
+      }
+    }
+
+    // Fallback path: print through an offscreen iframe (some Android WebViews
+    // allow this even when top-level window.print() is blocked).
+    function printViaIframe() {
+      try {
+        const html = buildPrintDocumentHTML();
+        const frame = document.createElement('iframe');
+        frame.style.position = 'fixed';
+        frame.style.right = '0';
+        frame.style.bottom = '0';
+        frame.style.width = '0';
+        frame.style.height = '0';
+        frame.style.border = '0';
+        document.body.appendChild(frame);
+        const doc = frame.contentWindow.document;
+        doc.open();
+        doc.write(html);
+        doc.close();
+        setTimeout(() => {
+          try {
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
+          } catch (e) {
+            console.warn('iframe print failed:', e);
+          }
+          setTimeout(() => { frame.remove(); }, 2000);
+        }, 400);
+        return true;
+      } catch (e) {
+        console.warn('printViaIframe error:', e);
+        return false;
+      }
+    }
+
+    function printAllData() {
+      // 1. Reveal the main app even if triggered pre-unlock.
       const mainApp = document.getElementById('mainApp');
       if (mainApp && mainApp.style.display === 'none') {
         mainApp.style.display = 'block';
       }
 
-      // 2. Remember which tab was active so we can restore it after printing.
-      const activeTabBtn = document.querySelector('.tab-nav button.active');
-      const previousActivePanel = document.querySelector('.tab-panel.active');
-
-      // 3. Show every panel at once for the full preview/print sheet.
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('active'));
-
-      // 4. Deactivate all background animations while previewing — on phones,
-      //    animated layers render as smeared/garbled blobs in the print preview
-      //    and hurt readability of the transparent UI behind the sheet.
+      // 2. Pure-CSS preparation: body.print-preview + the @media print rules in
+      //    style.css show every tab panel and freeze background animations. No
+      //    DOM mutation needed, so the print dialog cannot interrupt it.
       document.body.classList.add('print-preview');
 
-      const finishPrint = () => {
-        // Restore single-tab view and re-enable animations afterwards.
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-        if (previousActivePanel) previousActivePanel.classList.add('active');
-        else if (activeTabBtn) {
-          const panel = document.getElementById('panel-' + activeTabBtn.dataset.tab);
-          if (panel) panel.classList.add('active');
-        }
-        document.body.classList.remove('print-preview');
-      };
+      // 3. CRITICAL FIX FOR PHONES: synchronous print call keeps the tap
+      //    gesture, so iOS Safari / Android Chrome actually open the dialog.
+      let printOpened = false;
+      try {
+        window.print();
+        printOpened = true;
+      } catch (e) {
+        console.warn('window.print() threw:', e);
+      }
 
-      // Give layout one frame to settle before opening the preview dialog.
+      window.addEventListener('afterprint', finishPrintUI, { once: true });
+
+      // 4. If the dialog never appeared (some mobile browsers block silent
+      //    prints entirely), try the iframe route, then show manual fallback.
       setTimeout(() => {
-        try {
-          window.print();
-        } catch (e) {
-          console.warn('window.print() failed:', e);
+        if (!printOpened) {
+          const ok = printViaIframe();
+          if (!ok) {
+            showPrintFallbackOverlay();
+          } else {
+            schedulePrintRestore();
+          }
+        } else {
+          // Safety restore in case 'afterprint' never fires on this browser.
+          schedulePrintRestore();
         }
-        // Some mobile browsers fire 'afterprint' late or never, so also
-        // restore via a safety timeout; restoring twice is harmless.
-        window.addEventListener('afterprint', finishPrint, { once: true });
-        setTimeout(finishPrint, 1500);
-      }, 350);
+      }, 900);
     }
 
     // ===== GENERATE EMAIL HTML =====
@@ -833,3 +1024,4 @@
     window.closeEmailModal = closeEmailModal;
     window.showToast = showToast;
     window.forceSync = forceSync;  // ⬅️ NEW
+    window.clearAllCloudData = clearAllCloudData;  // ⬅️ NEW: clear all cloud data
