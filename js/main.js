@@ -757,6 +757,29 @@
         'html,body{background:#fff!important;margin:0;padding:0}' +
         '.log-container{background:#fff!important;color:#222!important;text-shadow:none!important;max-width:100%!important;border:none!important;box-shadow:none!important}' +
         '.pv-val{border-bottom:1px solid #bbb;display:inline-block;min-width:60px}' +
+        /* PDF/printed sheet corrections: the app's 93%-transparent dark theme
+           made the saved PDF look washed-out / very light. Force solid white
+           paper, fully opaque elements and dark ink so colors print proper. */
+        '*{opacity:1!important;animation:none!important}' +
+        'body.print-preview .bg-effect,body.print-preview .glow-layer,' +
+        'body.print-preview .mist-container,body.print-preview .hearts-container,' +
+        'body.print-preview .sparkle,body.print-preview .mist-particle,' +
+        'body.print-preview .heart-particle{display:none!important}' +
+        '.log-container,.table-wrap{background:#ffffff!important;' +
+        'backdrop-filter:none!important;-webkit-backdrop-filter:none!important;' +
+        'box-shadow:none!important;border-color:#ccc!important;text-shadow:none!important;' +
+        'color:#1a1a1a!important}' +
+        'h1,h2,h3,h4,h5,h6,p,span,div,label,small,strong,em,i,b,u,li,ul,ol,th,td,caption' +
+        '{-webkit-text-fill-color:#1a1a1a!important;color:#1a1a1a!important;text-shadow:none!important}' +
+        '.tab-panel h3,.tab-panel h4,.stamp-caption,.sig-label,.sig-line,.sig-date,' +
+        '.sign-off-overlay div,.sign-off-overlay span{font-weight:600!important}' +
+        '.log-header h1{color:#5a2d6a!important;-webkit-text-fill-color:#5a2d6a!important;' +
+        'background:none!important;-webkit-background-clip:unset!important;background-clip:unset!important}' +
+        '.log-header .sub{color:#444!important;-webkit-text-fill-color:#444!important}' +
+        'th{background:#e8e0f0!important;color:#1a1a1a!important;-webkit-text-fill-color:#1a1a1a!important}' +
+        'td input,td select,td textarea,.pv-val{color:#1a1a1a!important;-webkit-text-fill-color:#1a1a1a!important;' +
+        'background-color:transparent!important;text-shadow:none!important}' +
+        '.sign-off-stamp{filter:none!important}' +
         '</style></head><body class="print-preview">' + clone.innerHTML + '</body></html>';
     }
 

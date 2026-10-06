@@ -1289,14 +1289,17 @@
       top: 0;                    /* stays inside the sign-off area only */
       left: 79%;                 /* shifted further to the right side of the sign-off area */
       transform: translateX(-50%) rotate(-4deg);
-      width: 560px;              /* INCREASED image size again (was 420px) */
-      height: 249px;             /* stamp art is 1536x1024 — keep native aspect ratio */
+      width: 720px;              /* PDF: INCREASED again (was 560px) */
+      height: 320px;             /* stamp art is 1536x1024 — keep native aspect ratio */
       object-fit: contain;
       opacity: 1;                /* fully visible */
       z-index: 0;                /* behind the text (h4 / sig blocks use z-index:1) */
       pointer-events: none;      /* purely decorative — never blocks the text */
       filter: drop-shadow(0 0 14px rgba(230, 90, 160, 0.35)) contrast(1.1) saturate(1.15);
     }
+    /* The sign-off overlay always reserves room for the stamp so it can never
+       spill outside the sign-off area, on screen and in the PDF alike. */
+    .sign-off-overlay { min-height: 330px; }
     @media print {
       .sign-off-stamp { filter: none !important; }   /* plain ink behind text on paper */
     }
@@ -1306,6 +1309,7 @@
       .brand-logo { width: 190px; height: 190px; margin-bottom: 10px; }
       .love-stamp { width: 210px; height: 94px; }
       .sign-off-stamp { width: 450px; height: 201px; }  /* scaled down for phones, still larger than before */
+      .sign-off-overlay { min-height: 210px; }
       .password-box .brand-logo { width: 160px; height: 160px; }
     }
 
