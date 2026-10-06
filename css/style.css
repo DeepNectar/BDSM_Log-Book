@@ -1281,22 +1281,31 @@
       margin-bottom: 8px;
     }
 
+    /* "Behind text" picture format: the stamp floats as a background-style
+       picture BEHIND the sign-off text (lower z-index, no space reserved),
+       while the text stays readable on top of it. Same effect in print/PDF. */
     .sign-off-stamp {
-      display: block;
-      margin: 0 auto 10px auto;
-      width: 280px;
-      height: 125px;             /* stamp art is 1536x1024 — keep native aspect ratio */
+      position: absolute;        /* float behind the text, like Word's "Behind Text" */
+      top: 0;                    /* same spot as before — do not move the image */
+      left: 50%;
+      transform: translateX(-50%) rotate(-4deg);
+      width: 420px;              /* INCREASED image size (was 280px) */
+      height: 187px;             /* stamp art is 1536x1024 — keep native aspect ratio */
       object-fit: contain;
-      transform: rotate(-4deg);
-      opacity: 1;                /* fully visible normal image format */
+      opacity: 1;                /* fully visible */
+      z-index: 0;                /* behind the text (h4 / sig blocks use z-index:1) */
+      pointer-events: none;      /* purely decorative — never blocks the text */
       filter: drop-shadow(0 0 14px rgba(230, 90, 160, 0.35)) contrast(1.1) saturate(1.15);
+    }
+    @media print {
+      .sign-off-stamp { filter: none !important; }   /* plain ink behind text on paper */
     }
 
     @media (max-width: 550px) {
       /* ENLARGED: bigger Soulmate logo on phones */
       .brand-logo { width: 190px; height: 190px; margin-bottom: 10px; }
       .love-stamp { width: 210px; height: 94px; }
-      .sign-off-stamp { width: 200px; height: 88px; }
+      .sign-off-stamp { width: 300px; height: 134px; }  /* scaled down for phones, still larger than before */
       .password-box .brand-logo { width: 160px; height: 160px; }
     }
 
