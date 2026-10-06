@@ -34,7 +34,7 @@ Local preview: `python3 -m http.server 8000` then open http://localhost:8000
 | Asset | URL | Used in |
 |---|---|---|
 | Soulmate Logo | `https://lh3.googleusercontent.com/d/1eoI5L95RQxWzs0yaDrFMtst2FFsbK_Ny` | Favicon, Apple touch icon, login screen, app header, email export |
-| Love Stamp | `assets/love-stamp.png` (bundled local copy of Drive file `1YbINJdZNlQsiVb1wvtEX0pRPNcZPYozg`) | Sign-off section, footer, email export |
+| Love Stamp | `assets/love-stamp.png` (bundled local copy of Drive file `1xT4SnUR8dtEHP14MUMFZnYZnumAS96Fw`) | Sign-off section, footer, email export |
 
 > Note: The love stamp is now served from the repo itself (`assets/love-stamp.png`) so it always renders on the deployed site — no dependence on Google Drive redirects or sharing permissions. The email export references it via the repo's raw GitHub URL because email clients can't load relative paths.
 
