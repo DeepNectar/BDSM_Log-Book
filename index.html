@@ -211,10 +211,11 @@
 
     <!-- Global action buttons -->
     <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:25px; padding-top:18px; border-top:1px solid rgba(200,170,220,0.08); justify-content:center;">
-      <button class="btn btn-danger" onclick="printAllData()"><i class="fas fa-file-pdf"></i> Print / Save as PDF</button>
+      <button class="btn btn-danger" id="printPdfBtn"><i class="fas fa-file-pdf"></i> Print / Save as PDF</button>
       <button class="btn btn-primary" onclick="emailPDF()"><i class="fas fa-envelope"></i> Email PDF</button>
       <button class="btn btn-success" onclick="generateEmailHTML()"><i class="fas fa-code"></i> Generate Email HTML</button>
       <button class="btn btn-success" onclick="saveAllData()"><i class="fas fa-save"></i> Save All Data</button>
+      <button class="btn btn-warning" onclick="clearAllCloudData()"><i class="fas fa-trash-alt"></i> Clear All Cloud Data</button>
     </div>
 
     <div class="footer-note stamp-overlay">
@@ -242,6 +243,34 @@
   <div id="toast" class="toast"></div>
 
 
+
+  <!-- Print button: bind directly so window.print() runs inside the tap
+       gesture (phones silently block prints that come from async code). -->
+  <script>
+    (function () {
+      function onPrintTap(e) {
+        if (typeof window.printAllData === 'function') {
+          e.preventDefault();
+          window.printAllData();
+        }
+      }
+      document.addEventListener('DOMContentLoaded', function () {
+        var btn = document.getElementById('printPdfBtn');
+        if (!btn) return;
+        var touchUsed = false;
+        btn.addEventListener('touchend', function (e) {
+          touchUsed = true;
+          onPrintTap(e);
+          setTimeout(function () { touchUsed = false; }, 800);
+        }, { passive: false });
+        btn.addEventListener('click', function (e) {
+          if (touchUsed) { e.preventDefault(); return; }   // already handled
+          if (!e.isTrusted) return;                        // avoid double-fire
+          onPrintTap(e);
+        });
+      });
+    })();
+  </script>
 
   <!-- Project script (moved out of inline <script>) -->
   <script src="js/main.js" defer></script>
