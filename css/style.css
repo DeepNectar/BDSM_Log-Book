@@ -1286,8 +1286,8 @@
        while the text stays readable on top of it. Same effect in print/PDF. */
     .sign-off-stamp {
       position: absolute;        /* float behind the text, like Word's "Behind Text" */
-      top: 0;                    /* same spot as before — do not move the image */
-      left: 50%;
+      top: 0;                    /* stays inside the sign-off area only */
+      left: 58%;                 /* shifted slightly to the right side of the sign-off area */
       transform: translateX(-50%) rotate(-4deg);
       width: 420px;              /* INCREASED image size (was 280px) */
       height: 187px;             /* stamp art is 1536x1024 — keep native aspect ratio */
