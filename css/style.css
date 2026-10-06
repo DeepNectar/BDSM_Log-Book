@@ -1289,8 +1289,8 @@
       top: 0;                    /* stays inside the sign-off area only */
       left: 79%;                 /* shifted further to the right side of the sign-off area */
       transform: translateX(-50%) rotate(-4deg);
-      width: 420px;              /* INCREASED image size (was 280px) */
-      height: 187px;             /* stamp art is 1536x1024 — keep native aspect ratio */
+      width: 560px;              /* INCREASED image size again (was 420px) */
+      height: 249px;             /* stamp art is 1536x1024 — keep native aspect ratio */
       object-fit: contain;
       opacity: 1;                /* fully visible */
       z-index: 0;                /* behind the text (h4 / sig blocks use z-index:1) */
@@ -1305,7 +1305,7 @@
       /* ENLARGED: bigger Soulmate logo on phones */
       .brand-logo { width: 190px; height: 190px; margin-bottom: 10px; }
       .love-stamp { width: 210px; height: 94px; }
-      .sign-off-stamp { width: 300px; height: 134px; }  /* scaled down for phones, still larger than before */
+      .sign-off-stamp { width: 450px; height: 201px; }  /* scaled down for phones, still larger than before */
       .password-box .brand-logo { width: 160px; height: 160px; }
     }
 
