@@ -34,7 +34,7 @@ Local preview: `python3 -m http.server 8000` then open http://localhost:8000
 | Asset | URL | Used in |
 |---|---|---|
 | Soulmate Logo | `https://lh3.googleusercontent.com/d/1eoI5L95RQxWzs0yaDrFMtst2FFsbK_Ny` | Favicon, Apple touch icon, login screen, app header, email export |
-| Love Stamp | `https://drive.google.com/thumbnail?id=1yDEh4jOC8IwL4gb69AnoFGwXbQ7RkSZ3&sz=w600` | Sign-off section, footer, email export |
+| Love Stamp | `https://drive.google.com/thumbnail?id=14gtWWOaphAn3Zmfay9FfxgaLQvlot7tT&sz=w600` | Sign-off section, footer, email export |
 
 > Note: Google Drive `/file/view` links don't render in `<img>` tags — the direct-thumbnail format above is used instead. Make sure the Drive file sharing is set to **"Anyone with the link"**.
 
