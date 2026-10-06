@@ -173,9 +173,10 @@
       z-index: 10;
       max-width: 1200px;
       width: 100%;
-      background: rgba(20, 10, 25, 0.78);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      /* 93% transparent so the background animation shows through */
+      background: rgba(20, 10, 25, 0.07);
+      backdrop-filter: blur(2px) saturate(180%);
+      -webkit-backdrop-filter: blur(2px) saturate(180%);
       border: 1px solid rgba(200, 120, 180, 0.15);
       border-radius: 40px;
       padding: 30px 25px;
