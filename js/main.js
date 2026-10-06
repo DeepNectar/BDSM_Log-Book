@@ -949,8 +949,8 @@
     <h2>✍️ Sign‑off</h2>
     <img src="https://raw.githubusercontent.com/DeepNectar/soulmate-log-book/main/assets/love-stamp.png" alt="Love Stamp" style="display:block; margin:0 auto 12px auto; width:80px; height:80px; object-fit:contain;">
     <div class="signature">
-      <div><strong>${deep}'s Signature:</strong> _________________  Date: ________</div>
-      <div><strong>${honey}'s Signature:</strong> _________________  Date: ________</div>
+      <div><strong>${deep}'s Signature:</strong><br><img src="https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq32eCW-ZxMasj" alt="${deep}'s Signature" style="display:block; max-height:60px; margin:6px 0;"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</div>
+      <div><strong>${honey}'s Signature:</strong><br><img src="https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI" alt="${honey}'s Signature" style="display:block; max-height:60px; margin:6px 0;"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</div>
     </div>
   </div>
 
