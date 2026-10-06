@@ -692,6 +692,53 @@
     .print-fallback-box .pf-hint { font-size: 0.78rem; color: #a898b0; margin-top: 10px; }
     @media print { #printFallback, .print-fallback-box { display: none !important; } }
 
+    /* ---------- PDF PREVIEW MODAL (Save PDF button) ---------- */
+    #pdfPreviewOverlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(4px);
+      z-index: 2100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+    .pdf-preview-box {
+      background: rgba(28, 16, 38, 0.98);
+      border: 1px solid rgba(200, 170, 220, 0.25);
+      border-radius: 16px;
+      padding: 18px;
+      width: min(900px, 100%);
+      height: min(88vh, 900px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.7);
+      box-sizing: border-box;
+    }
+    .pdf-preview-box h3 { color: #d4b0d8; margin: 0; font-size: 1.05rem; }
+    #pdfPreviewFrame {
+      flex: 1;
+      width: 100%;
+      min-height: 300px;
+      border: 1px solid rgba(200, 170, 220, 0.2);
+      border-radius: 10px;
+      background: #fff;
+    }
+    .pdf-preview-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .pdf-ios-hint { color: #a898b0; font-size: 0.78rem; margin: 0; }
+    /* On phones the iframe PDF viewer is unreliable — shrink the preview and
+       make the Save / Open buttons prominent. */
+    @media (max-width: 550px) {
+      #pdfPreviewOverlay { padding: 8px; }
+      .pdf-preview-box { height: 92vh; padding: 12px; }
+      #pdfPreviewFrame { min-height: 180px; }
+      .pdf-preview-actions .btn { flex: 1 1 auto; }
+    }
+    @media print { #pdfPreviewOverlay, .pdf-preview-box { display: none !important; } }
+
     /* Email HTML modal overlay */
     .email-modal {
       display: none;
@@ -1045,6 +1092,9 @@
         padding: 14px 8px;
         border-radius: 18px;
       }
+      /* keep the enlarged logo inside very small phone screens */
+      .brand-logo { width: 150px; height: 150px; }
+      .password-box .brand-logo { width: 130px; height: 130px; }
       .log-header h1 {
         font-size: 1rem;
         letter-spacing: 1px;
@@ -1194,8 +1244,9 @@
     .brand-logo {
       display: block;
       margin: 0 auto 14px auto;
-      width: 200px;
-      height: 200px;
+      /* ENLARGED: bigger Soulmate logo on laptops/desktops */
+      width: 260px;
+      height: 260px;
       object-fit: contain;
       border-radius: 50%;
       background: transparent;   /* no white box behind the logo */
@@ -1242,8 +1293,46 @@
     }
 
     @media (max-width: 550px) {
-      .brand-logo { width: 140px; height: 140px; margin-bottom: 10px; }
+      /* ENLARGED: bigger Soulmate logo on phones */
+      .brand-logo { width: 190px; height: 190px; margin-bottom: 10px; }
       .love-stamp { width: 210px; height: 94px; }
       .sign-off-stamp { width: 200px; height: 88px; }
-      .password-box .brand-logo { width: 120px; height: 120px; }
+      .password-box .brand-logo { width: 160px; height: 160px; }
+    }
+
+    /* ---------- SIGNATURES: sit exactly ON the dotted line ---------- */
+    /* The old inline style used a negative bottom margin (-14px), which pushed
+       the signature image below the underline — that is why the sign "was not
+       in the correct place". Now the label / image / dotted line form one tidy
+       column and the ink rests right on the line, on phones AND laptops. */
+    .sig-block {
+      min-width: 200px;
+    }
+    .sig-label {
+      color: #b0a0b8;
+      display: inline-block;
+      margin-bottom: 2px;
+    }
+    .sig-img {
+      display: block;
+      max-height: 56px;          /* fits inside the print sheet on iPhones too */
+      height: auto;
+      width: auto;
+      max-width: 220px;
+      margin: 0 auto -10px auto; /* ink overlaps the dotted line from above */
+      background: transparent;
+      pointer-events: none;
+    }
+    .sig-line {
+      display: block;
+      color: #999;
+      letter-spacing: 1px;
+    }
+    .sig-date {
+      color: #999;
+      white-space: nowrap;
+    }
+    @media print {
+      .sig-img { max-height: 48px !important; }
+      .sig-label, .sig-line, .sig-date { color: #333 !important; }
     }

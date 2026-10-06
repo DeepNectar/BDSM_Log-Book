@@ -718,10 +718,13 @@
       const clone = document.body.cloneNode(true);
       ['#passwordOverlay', '.email-modal', '#toast', '#syncBadgeWrap',
        '.bg-effect', '.mist-container', '.hearts-container', '.tab-nav',
-       '#printFallback'].forEach(sel => {
+       '#printFallback', '#pdfPreviewOverlay'].forEach(sel => {
         clone.querySelectorAll(sel).forEach(el => el.remove());
       });
       clone.querySelectorAll('.btn, .btn-group').forEach(el => el.remove());
+      // Only keep the FIRST (header) logo — drop the duplicate login-screen one.
+      clone.querySelectorAll('.brand-logo').forEach((el, i) => { if (i > 0) el.remove(); });
+      clone.querySelectorAll('#mainApp').forEach(el => { el.style.display = 'block'; });
       clone.querySelectorAll('.tab-panel').forEach(p => p.classList.add('active'));
 
       clone.querySelectorAll('input, select, textarea').forEach(el => {
@@ -735,10 +738,24 @@
       const styleText = Array.from(document.querySelectorAll('style'))
         .map(s => s.textContent).join('\n');
 
+      // Also inline the linked css/style.css — without it the downloaded /
+      // printed sheet renders unstyled (this was another reason phones showed
+      // a blank "preview" for the saved file).
+      let linkedCss = '';
+      try {
+        document.querySelectorAll('link[rel="stylesheet"]').forEach(l => {
+          try {
+            Array.from(l.sheet.cssRules).forEach(r => { linkedCss += r.cssText + '\n'; });
+          } catch (e) { /* cross-origin sheet (e.g. Font Awesome CDN) — skip */ }
+        });
+      } catch (e) { /* ignore */ }
+
       return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
         '<meta name="viewport" content="width=device-width, initial-scale=1">' +
-        '<title>Log Book \u2014 Print</title><style>' + styleText + '\n' +
+        '<title>Log Book \u2014 Print</title><style>' + linkedCss + '\n' + styleText + '\n' +
         '@media print{html,body{background:#fff!important}.log-container{background:#fff!important;color:#222!important;text-shadow:none!important}}' +
+        'html,body{background:#fff!important;margin:0;padding:0}' +
+        '.log-container{background:#fff!important;color:#222!important;text-shadow:none!important;max-width:100%!important;border:none!important;box-shadow:none!important}' +
         '.pv-val{border-bottom:1px solid #bbb;display:inline-block;min-width:60px}' +
         '</style></head><body class="print-preview">' + clone.innerHTML + '</body></html>';
     }
@@ -834,6 +851,266 @@
       }, 900);
     }
 
+    // ===== REAL PDF: generate with jsPDF + html2canvas, preview & save =====
+    // Why the old flow failed on iPhones:
+    //   1. iOS Safari blocks window.print() unless it runs in the same tap
+    //      gesture — deferred/async calls silently do nothing.
+    //   2. The "Download HTML File" fallback produced a .html blob, which
+    //      iOS Files/QuickLook cannot turn into a PDF — so users could never
+    //      actually SAVE a PDF on the phone.
+    // This new path builds a genuine PDF IN the browser (jsPDF), shows it in
+    // an in-app preview modal first, and then offers real Save/Open-in-Files
+    // buttons that work on iPhone, Android, Mac and Windows.
+    const PDF_LIB_CANDIDATES = [
+      'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+      'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'
+    ];
+    const H2C_LIB_CANDIDATES = [
+      'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+      'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'
+    ];
+
+    function loadScriptOnce(url) {
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = url;
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error('Failed to load ' + url));
+        document.head.appendChild(s);
+      });
+    }
+
+    async function loadWithFallbacks(candidates, check) {
+      if (check()) return true;
+      for (const url of candidates) {
+        try { await loadScriptOnce(url); } catch (e) { /* try next mirror */ }
+        if (check()) return true;
+      }
+      return false;
+    }
+
+    async function ensurePdfLibs() {
+      const okPdf = await loadWithFallbacks(PDF_LIB_CANDIDATES,
+        () => !!(window.jspdf && window.jspdf.jsPDF));
+      const okCanvas = await loadWithFallbacks(H2C_LIB_CANDIDATES,
+        () => typeof window.html2canvas === 'function');
+      return okPdf && okCanvas;
+    }
+
+    // Wait until every logo / stamp / signature image is fully decoded so the
+    // captured PDF never misses them (Google-Drive images load slowly).
+    async function waitForImages(root) {
+      const imgs = Array.from(root.querySelectorAll('img'));
+      await Promise.all(imgs.map(img => {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        return new Promise(resolve => {
+          const done = () => resolve();
+          img.addEventListener('load', done, { once: true });
+          img.addEventListener('error', done, { once: true });
+          setTimeout(done, 8000);   // never hang forever on one broken image
+        });
+      }));
+    }
+
+    // Build a clean, WHITE paper sheet off-screen (same content as the print
+    // doc) so the PDF looks like a document — not the dark app theme.
+    function buildPdfSheetElement() {
+      const html = buildPrintDocumentHTML();
+      const holder = document.createElement('div');
+      holder.setAttribute('aria-hidden', 'true');
+      holder.style.cssText =
+        'position:fixed;left:-10000px;top:0;width:794px;background:#ffffff;' +
+        'color:#222;z-index:-1;overflow:visible;';
+      holder.innerHTML = html;
+      document.body.appendChild(holder);
+      // force layout so html2canvas captures full height
+      void holder.offsetHeight;
+      return holder;
+    }
+
+    let pdfBusy = false;
+    async function generatePdfBlob() {
+      if (pdfBusy) return null;
+      if (!(await ensurePdfLibs())) {
+        showToast('⚠️ PDF library unavailable offline — using Print instead');
+        printAllData();
+        return null;
+      }
+      pdfBusy = true;
+      showToast('📄 Generating PDF… this takes a few seconds');
+      let holder = null;
+      try {
+        holder = buildPdfSheetElement();
+        await waitForImages(holder);
+
+        const canvas = await window.html2canvas(holder, {
+          scale: 2,                 // crisp text on phones & laptops
+          backgroundColor: '#ffffff',
+          useCORS: true,            // needed for the Google-hosted logo/signatures
+          allowTaint: false,
+          logging: false
+        });
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageWmm = 210, pageHmm = 297;
+        const imgWmm = pageWmm;
+        const imgHmm = canvas.height * (pageWmm / canvas.width);
+
+        const tmp = document.createElement('canvas');
+        const pxPerMm = canvas.width / pageWmm;
+        const sliceHpx = Math.floor(pageHmm * pxPerMm);
+        let yPx = 0, pageIdx = 0;
+        while (yPx < canvas.height) {
+          const h = Math.min(sliceHpx, canvas.height - yPx);
+          tmp.width = canvas.width;
+          tmp.height = h;
+          tmp.getContext('2d').drawImage(canvas, 0, yPx, canvas.width, h,
+                                         0, 0, canvas.width, h);
+          const dataUrl = tmp.toDataURL('image/jpeg', 0.92);
+          if (pageIdx > 0) pdf.addPage();
+          pdf.addImage(dataUrl, 'JPEG', 0, 0, imgWmm, h / pxPerMm);
+          yPx += h;
+          pageIdx++;
+        }
+        return pdf.output('blob');   // REAL application/pdf Blob
+      } catch (e) {
+        console.error('generatePdfBlob failed:', e);
+        showToast('⚠️ Could not build the PDF here — opening Print instead');
+        printAllData();
+        return null;
+      } finally {
+        if (holder) holder.remove();
+        pdfBusy = false;
+      }
+    }
+
+    function isIOSDevice() {
+      const ua = navigator.userAgent || '';
+      const iOS = /iPad|iPhone|iPod/.test(ua);
+      const iPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+      return iOS || iPadOS;
+    }
+
+    function isSafariBrowser() {
+      const ua = navigator.userAgent || '';
+      return /^((?!chrome|android|crios|fxios|edg).)*safari/i.test(ua);
+    }
+
+    // Does this browser support "Save to Files" via the File System Access API?
+    function canUseNativePicker() {
+      return typeof window.showSaveFilePicker === 'function' &&
+             !!window.isSecureContext;
+    }
+
+    // Classic anchor download — works on desktop Chrome/Firefox/Edge AND on
+    // Safari (the PDF opens in a new tab where the Share button → "Save to
+    // Files" / Print → "Save as PDF" becomes available on iPhone).
+    function downloadBlobViaAnchor(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { a.remove(); }, 1000);
+      // keep the object URL alive a bit longer for iOS QuickLook handoff
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      return url;
+    }
+
+    // Native "Save to Files…" picker (Chrome/Edge desktop & Android).
+    async function nativeSaveBlob(blob, filename) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{ description: 'PDF Document', accept: { 'application/pdf': ['.pdf'] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        showToast('✅ Saved!');
+        return true;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return true;  // user cancelled
+        console.warn('native save failed, falling back:', err);
+        return false;
+      }
+    }
+
+    function openPdfPreviewModal(blob) {
+      closePdfPreview();
+      const url = URL.createObjectURL(blob);
+      const overlay = document.createElement('div');
+      overlay.id = 'pdfPreviewOverlay';
+      overlay.innerHTML =
+        '<div class="pdf-preview-box">' +
+          '<h3><i class="fas fa-file-pdf"></i> PDF Ready — Preview</h3>' +
+          '<iframe id="pdfPreviewFrame" src="' + url + '" title="PDF Preview"></iframe>' +
+          '<p class="pf-hint pdf-ios-hint">On iPhone: if the preview stays blank, use ' +
+            '<b>Open in Safari</b>, then tap the <b>Share</b> button → <b>Save to Files</b> ' +
+            '(or → Print → Save as PDF).</p>' +
+          '<div class="pdf-preview-actions">' +
+            '<button class="btn btn-success" id="pdfSaveBtn"><i class="fas fa-save"></i> Save PDF</button>' +
+            '<button class="btn btn-primary" id="pdfOpenBtn"><i class="fas fa-external-link-alt"></i> Open in Safari</button>' +
+            '<button class="btn btn-danger" id="pdfCloseBtn"><i class="fas fa-times"></i> Close</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+
+      const filename = 'Soulmate-Log-Book.pdf';
+      document.getElementById('pdfSaveBtn').onclick = async () => {
+        let ok = false;
+        if (canUseNativePicker()) ok = await nativeSaveBlob(blob, filename);
+        if (!ok) {
+          downloadBlobViaAnchor(blob, filename);
+          if (isIOSDevice() && isSafariBrowser()) {
+            showToast('📱 iPhone: tap Share → Save to Files (opened in new tab)');
+          } else {
+            showToast('⬇️ PDF saved — check your Downloads / Files app');
+          }
+        }
+      };
+      document.getElementById('pdfOpenBtn').onclick = () => {
+        const w = window.open(url, '_blank');
+        if (!w) { location.href = url; }   // popup blocked → navigate directly
+      };
+      document.getElementById('pdfCloseBtn').onclick = () => {
+        URL.revokeObjectURL(url);
+        overlay.remove();
+      };
+    }
+
+    function closePdfPreview() {
+      const old = document.getElementById('pdfPreviewOverlay');
+      if (old) old.remove();
+    }
+
+    async function saveAsPdf() {
+      const blob = await generatePdfBlob();
+      if (!blob) return;
+      openPdfPreviewModal(blob);
+      showToast('✅ PDF ready! Tap "Save PDF" or "Open in Safari".');
+    }
+
+    // Bind the new button WITHOUT inline onclick so the handler still runs if
+    // any earlier script ever fails to parse.
+    (function bindSavePdfButton() {
+      const attach = () => {
+        const btn = document.getElementById('savePdfBtn');
+        if (btn && !btn.dataset.bound) {
+          btn.dataset.bound = '1';
+          btn.addEventListener('click', () => { saveAsPdf(); });
+        }
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attach);
+      } else {
+        attach();
+      }
+    })();
+
     // ===== GENERATE EMAIL HTML =====
     function generateEmailHTML() {
       const deep = document.getElementById('settingDeep')?.value || 'Deep';
@@ -911,7 +1188,8 @@
   td { padding: 8px 12px; border-bottom: 1px solid #eee; color: #222; }
   .footer { text-align: center; margin-top: 30px; color: #888; font-size: 13px; border-top: 1px solid #e0d0e8; padding-top: 20px; }
   .signature { display: flex; justify-content: space-around; margin-top: 20px; flex-wrap: wrap; }
-  .signature div { min-width: 200px; }
+  .signature div { min-width: 200px; text-align: left; }
+  .signature img.sig { display: block; max-height: 56px; width: auto; margin: 2px 0 -10px 2px; }
   .subject-line { background: #f0e6f5; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; color: #4a2a5a; border-left: 4px solid #7a4a8a; }
   .subject-line strong { color: #5a2a6a; }
 </style>
@@ -922,7 +1200,7 @@
     <strong>📧 Subject:</strong> ${subject}
   </div>
   
-  <img src="https://lh3.googleusercontent.com/d/1eoI5L95RQxWzs0yaDrFMtst2FFsbK_Ny" alt="Soulmate Logo" style="display:block; margin:0 auto 12px auto; width:140px; height:140px; object-fit:contain; border-radius:50%; background:#f7eef9; padding:8px; border:1px solid #d8b8e0;">
+  <img src="https://lh3.googleusercontent.com/d/1eoI5L95RQxWzs0yaDrFMtst2FFsbK_Ny" alt="Soulmate Logo" style="display:block; margin:0 auto 12px auto; width:180px; height:180px; object-fit:contain; border-radius:50%; background:#f7eef9; padding:8px; border:1px solid #d8b8e0;">
   <h1>❤️ ${deep.toUpperCase()} & ${honey.toUpperCase()} ❤️</h1>
   <p style="text-align:center; color:#7a6a82; font-size:16px; letter-spacing:2px;">BDSM Contract Log Book</p>
 
@@ -949,8 +1227,8 @@
     <h2>✍️ Sign‑off</h2>
     <img src="https://lh3.googleusercontent.com/d/1xT4SnUR8dtEHP14MUMFZnYZnumAS96Fw" alt="Love Stamp" style="display:block; margin:0 auto 12px auto; width:80px; height:80px; object-fit:contain;">
     <div class="signature">
-      <div><strong>${deep}'s Signature:</strong><br><img src="https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq32eCW-ZxMasj" alt="${deep}'s Signature" style="display:block; max-height:60px; margin:4px 0 -14px 4px;"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</div>
-      <div><strong>${honey}'s Signature:</strong><br><img src="https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI" alt="${honey}'s Signature" style="display:block; max-height:60px; margin:4px 0 -14px 4px;"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</div>
+      <div><strong>${deep}'s Signature:</strong><img class="sig" src="https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq32eCW-ZxMasj" alt="${deep}'s Signature"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</div>
+      <div><strong>${honey}'s Signature:</strong><img class="sig" src="https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI" alt="${honey}'s Signature"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</div>
     </div>
   </div>
 
@@ -1018,6 +1296,7 @@
     window.saveAllData = saveAllData;
     window.applySettings = applySettings;
     window.printAllData = printAllData;
+    window.saveAsPdf = saveAsPdf;   // ⬅️ NEW: real in-browser PDF + preview
     window.emailPDF = emailPDF;
     window.generateEmailHTML = generateEmailHTML;
     window.copyEmailHTML = copyEmailHTML;

@@ -13,6 +13,11 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- jsPDF + html2canvas: real in-browser PDF generation & preview.
+       Loaded with defer so they NEVER block page start-up; if the CDN is
+       unreachable the app falls back to the built-in Print → Save as PDF. -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <!-- Project stylesheet (moved out of inline <style>) -->
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -182,15 +187,15 @@
         <img class="sign-off-stamp" src="assets/love-stamp.png" alt="Love Stamp">
         <h4 style="text-align:center; position:relative; z-index:1;">Sign‑off</h4>
         <div style="display:flex; flex-wrap:wrap; gap:30px; margin-top:10px; position:relative; z-index:1;">
-          <div>
-            <span style="color:#b0a0b8;">Deep's Signature:</span><br>
-            <img src="https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq32eCW-ZxMasj" alt="Deep's Signature" style="max-height:60px; display:block; margin:4px 0 -14px 4px;">
-            <span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________
+          <div class="sig-block">
+            <span class="sig-label">Deep's Signature:</span>
+            <img class="sig-img" src="https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq32eCW-ZxMasj" alt="Deep's Signature">
+            <span class="sig-line">_________________</span>&nbsp;&nbsp;<span class="sig-date">Date: ________</span>
           </div>
-          <div>
-            <span style="color:#b0a0b8;">Honey's Signature:</span><br>
-            <img src="https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI" alt="Honey's Signature" style="max-height:60px; display:block; margin:4px 0 -14px 4px;">
-            <span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________
+          <div class="sig-block">
+            <span class="sig-label">Honey's Signature:</span>
+            <img class="sig-img" src="https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI" alt="Honey's Signature">
+            <span class="sig-line">_________________</span>&nbsp;&nbsp;<span class="sig-date">Date: ________</span>
           </div>
         </div>
       </div>
@@ -220,6 +225,7 @@
     <!-- Global action buttons -->
     <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:25px; padding-top:18px; border-top:1px solid rgba(200,170,220,0.08); justify-content:center;">
       <button class="btn btn-danger" id="printPdfBtn"><i class="fas fa-file-pdf"></i> Print / Save as PDF</button>
+      <button class="btn btn-primary" id="savePdfBtn"><i class="fas fa-download"></i> Save PDF (Preview)</button>
       <button class="btn btn-primary" onclick="emailPDF()"><i class="fas fa-envelope"></i> Email PDF</button>
       <button class="btn btn-success" onclick="generateEmailHTML()"><i class="fas fa-code"></i> Generate Email HTML</button>
       <button class="btn btn-success" onclick="saveAllData()"><i class="fas fa-save"></i> Save All Data</button>
