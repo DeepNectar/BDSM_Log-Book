@@ -725,7 +725,7 @@
 
   <div style="margin-top:30px; border-top:2px solid #e8d5f0; padding-top:20px;">
     <h2>✍️ Sign‑off</h2>
-    <img src="https://drive.google.com/thumbnail?id=14gtWWOaphAn3Zmfay9FfxgaLQvlot7tT&sz=w600" alt="Love Stamp" style="display:block; margin:0 auto 12px auto; width:80px; height:80px; object-fit:contain;">
+    <img src="https://raw.githubusercontent.com/DeepNectar/soulmate-log-book/main/assets/love-stamp.png" alt="Love Stamp" style="display:block; margin:0 auto 12px auto; width:80px; height:80px; object-fit:contain;">
     <div class="signature">
       <div><strong>${deep}'s Signature:</strong> _________________  Date: ________</div>
       <div><strong>${honey}'s Signature:</strong> _________________  Date: ________</div>
