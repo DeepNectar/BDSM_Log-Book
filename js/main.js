@@ -1505,7 +1505,7 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
   .footer { text-align: center; margin-top: 30px; color: #888; font-size: 13px; border-top: 1px solid #e0d0e8; padding-top: 20px; }
   .signature { display: flex; justify-content: space-around; margin-top: 20px; flex-wrap: wrap; position: relative; z-index: 1; }
   .signature div { min-width: 200px; text-align: left; }
-  .signature img.sig { display: block; min-height: 120px; max-height: 150px; width: auto; max-width: 420px; margin: 2px 0 -12px 2px; }  /* ENLARGED sign images (was 56px) so they are visible in the PDF */
+  .signature img.sig { display: block; min-height: 56px; max-height: 72px; width: auto; max-width: 220px; margin: 2px 0 -8px 2px; }  /* COMPACT sign size — matches the on-screen & email signature scale */
   /* SIGN-OFF SECTION — same format as the PDF/app: enlarged 400x179 love stamp
      watermark sitting BEHIND the sign-off text, nudged slightly right, soft ink
      (opacity 0.35, no glow), with the enlarged signatures on top of it. */
