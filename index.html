@@ -30,10 +30,10 @@
     <div class="glow-layer"></div>
     <div class="glow-layer"></div>
   </div>
-  
+
   <!-- Mist particles -->
   <div class="mist-container" id="mistContainer"></div>
-  
+
   <!-- Floating Hearts Container -->
   <div class="hearts-container" id="heartsContainer"></div>
 
@@ -56,7 +56,7 @@
   </div>
 
   <!-- MAIN CONTAINER -->
-  <div class="log-container" id="mainApp" style="display:none;">   
+  <div class="log-container" id="mainApp" style="display:none;">
     <div class="log-header">
       <img class="brand-logo" src="https://lh3.googleusercontent.com/d/1eoI5L95RQxWzs0yaDrFMtst2FFsbK_Ny" alt="Soulmate Logo">
       <h1><i class="fas fa-heart"></i> DEEP & HONEY <i class="fas fa-heart"></i></h1>
@@ -184,18 +184,18 @@
         <table id="finalTable"><tbody id="finalBody"></tbody></table>
       </div>
       <div class="stamp-overlay sign-off-overlay" style="margin-top:20px; border-top:1px solid rgba(200,170,220,0.1); padding-top:18px;">
-        <img class="sign-off-stamp" src="assets/love-stamp.png" alt="Love Stamp">
+        <img class="sign-off-stamp stamp-watermark" src="assets/love-stamp.png" alt="Love Stamp">
         <h4 style="text-align:center; position:relative; z-index:1;">Sign‑off</h4>
         <div style="display:flex; flex-wrap:wrap; gap:30px; margin-top:10px; position:relative; z-index:1;">
           <div class="sig-block">
             <span class="sig-label">Deep's Signature:</span>
-            <img class="sig-img" src="https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq32eCW-ZxMasj" alt="Deep's Signature">
-            <span class="sig-line">_________________</span>&nbsp;&nbsp;<span class="sig-date">Date: ________</span>
+            <img class="sig-img" src="https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq3eCW-ZxMasj" alt="Deep's Signature" onerror="window.sigFallback && sigFallback(this);">
+            <span class="sig-line">_________________</span>&nbsp;&nbsp;<span class="sig-date">Date: 07/10/2026</span>
           </div>
           <div class="sig-block">
             <span class="sig-label">Honey's Signature:</span>
-            <img class="sig-img" src="https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI" alt="Honey's Signature">
-            <span class="sig-line">_________________</span>&nbsp;&nbsp;<span class="sig-date">Date: ________</span>
+            <img class="sig-img" src="https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI" alt="Honey's Signature" onerror="window.sigFallback && sigFallback(this);">
+            <span class="sig-line">_________________</span>&nbsp;&nbsp;<span class="sig-date">Date: 07/10/2026</span>
           </div>
         </div>
       </div>
@@ -259,8 +259,11 @@
 
 
 
-  <!-- Print button: bind directly so window.print() runs inside the tap
-       gesture (phones silently block prints that come from async code). -->
+  <!-- Print buttons: bind directly so window.print() runs inside the tap
+       gesture (phones silently block prints that come from async code).
+      "Save PDF (Preview)" (printPdfBtn2) and "Generate Email HTML"
+      (printPdfBtn3) are clones of "Print / Save as PDF" (printPdfBtn):
+      same look, same handler — all three do exactly the same thing. -->
   <script>
     (function () {
       function onPrintTap(e) {
@@ -270,18 +273,20 @@
         }
       }
       document.addEventListener('DOMContentLoaded', function () {
-        var btn = document.getElementById('printPdfBtn');
-        if (!btn) return;
-        var touchUsed = false;
-        btn.addEventListener('touchend', function (e) {
-          touchUsed = true;
-          onPrintTap(e);
-          setTimeout(function () { touchUsed = false; }, 800);
-        }, { passive: false });
-        btn.addEventListener('click', function (e) {
-          if (touchUsed) { e.preventDefault(); return; }   // already handled
-          if (!e.isTrusted) return;                        // avoid double-fire
-          onPrintTap(e);
+        ['printPdfBtn', 'printPdfBtn2', 'printPdfBtn3'].forEach(function (id) {
+          var btn = document.getElementById(id);
+          if (!btn) return;
+          var touchUsed = false;
+          btn.addEventListener('touchend', function (e) {
+            touchUsed = true;
+            onPrintTap(e);
+            setTimeout(function () { touchUsed = false; }, 800);
+          }, { passive: false });
+          btn.addEventListener('click', function (e) {
+            if (touchUsed) { e.preventDefault(); return; }   // already handled
+            if (!e.isTrusted) return;                        // avoid double-fire
+            onPrintTap(e);
+          });
         });
       });
     })();

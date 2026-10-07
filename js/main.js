@@ -660,6 +660,90 @@
       markDirty();   // settings changes also get saved to the cloud
     }
 
+    // ============================================================
+    // EMBEDDED IMAGE FALLBACKS (sign images, logo, love stamp)
+    // ------------------------------------------------------------
+    // The sign images are hosted on Google (lh3.googleusercontent.com).
+    // If a viewer's device/mail client blocks or fails to load them, the
+    // PDF / HTML email would show blank signature spaces. These base64
+    // data-URLs are embedded directly in this file, so they ALWAYS come
+    // through when you copy the HTML code into an email or a PDF:
+    //   1. On screen (index.html .sig-img) via sigFallback() onerror hook
+    //   2. In the printed/PDF document via embedEmbeddedImages()
+    //   3. In the emailed HTML report via INLINE <img src="data:...">
+    // To replace with your own exported files later: open the image, run
+    //   fetch('img.png').then(r=>r.blob()).then(b=>{const fr=new FileReader();
+    //   fr.onload=()=>console.log(fr.result);fr.readAsDataURL(b);})
+    // and paste the result below.
+    // ============================================================
+    const LOGO_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+    const STAMP_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+    const DEEP_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+    const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
+    function isDataUrl(src) { return typeof src === 'string' && src.indexOf('data:') === 0; }
+    function isRemoteSrc(src) { return typeof src === 'string' && /^https?:\/\//i.test(src); }
+
+    // Pick the right embedded fallback for an image based on its URL/alt text.
+    function embeddedImageFor(img) {
+      const s = ((img.getAttribute('src') || '') + ' ' + (img.getAttribute('alt') || '')).toLowerCase();
+      if (s.indexOf('signature') !== -1 || s.indexOf('sig-') !== -1) {
+        return (s.indexOf('honey') !== -1) ? HONEY_SIGN_DATA_URL : DEEP_SIGN_DATA_URL;
+      }
+      if (s.indexOf('stamp') !== -1) return STAMP_DATA_URL;
+      if (s.indexOf('logo') !== -1) return LOGO_DATA_URL;
+      return '';
+    }
+
+    // Swap a broken remote image for its embedded base64 twin (used by the
+    // onerror hook on index.html's <img class="sig-img"> elements).
+    window.sigFallback = function (img) {
+      try {
+        if (!img || isDataUrl(img.getAttribute('src') || '')) return;
+        const d = embeddedImageFor(img);
+        if (d) img.src = d;
+      } catch (e) { /* never break the page over a picture */ }
+    };
+
+    // Inline every sign/logo/stamp image of a cloned print document as a
+    // base64 data-URL BEFORE html2canvas captures it. This guarantees the
+    // signatures appear in the generated PDF even when the phone has no
+    // network access at capture time or the image host is blocked.
+    async function embedEmbeddedImages(root) {
+      const imgs = Array.from(root.querySelectorAll('img'));
+      await Promise.all(imgs.map(async (img) => {
+        const src = img.getAttribute('src') || '';
+        if (isDataUrl(src)) return;                       // already embedded
+        const data = embeddedImageFor(img);
+        if (!data) return;                                // not a known asset
+        // If the image failed to load, or it is still loading when the PDF is
+        // being built (typical on slow phone connections), swap in the base64
+        // copy so html2canvas ALWAYS captures real pixels — never a blank space.
+        const broken = (typeof img.complete === 'boolean' && img.complete &&
+                        img.naturalWidth === 0);
+        const pending = !(img.complete && img.naturalWidth > 0);
+        if (!broken && !pending) return;                  // loaded fine, keep crisp original
+        if (broken) { img.src = data; return; }           // host blocked/offline → embedded twin
+        try {
+          if (isRemoteSrc(src)) {
+            const res = await fetch(src, { mode: 'cors', cache: 'force-cache' });
+            if (res.ok) {
+              const blob = await res.blob();
+              const url = await new Promise((resolve, reject) => {
+                const fr = new FileReader();
+                fr.onload = () => resolve(fr.result);
+                fr.onerror = reject;
+                fr.readAsDataURL(blob);
+              });
+              img.src = url;                              // real pixels embedded
+              return;
+            }
+          }
+        } catch (e) { /* CORS/offline → drop to embedded fallback below */ }
+        img.src = data;                                   // guaranteed visible in PDF/email
+      }));
+    }
+
     // ===== PRINT ALL DATA (preview mode) — MOBILE-SAFE VERSION =====
     // Fix for phones: iOS Safari and many Android browsers silently ignore
     // window.print() when it is called from inside a setTimeout (the user-gesture
@@ -669,7 +753,21 @@
     //   2. call window.print() SYNCHRONOUSLY inside the tap handler,
     //   3. fall back to an invisible iframe print if the dialog never opens,
     //   4. offer "Download HTML" as a guaranteed last resort.
+    //
+    // NEW FIX FOR iPHONES: iOS Safari refuses to open window.print() at all
+    // inside iframes / blob-URL tabs, so both the iframe route and the
+    // "downloaded HTML file" previously did NOTHING on iPhone. On iOS we now
+    // skip those dead ends entirely and go straight to the REAL PDF path
+    // (jsPDF + html2canvas → blob → new tab → Share → Save to Files), which
+    // always works in Safari/iPhone.
     let printRestoreTimer = null;
+    // Remembers whether the most recent printAllData() tap actually opened the
+    // native print dialog (iOS fires beforeprint/afterprint; blocked taps don't).
+    let printDialogSeen = false;
+    try {
+      window.addEventListener('beforeprint', () => { printDialogSeen = true; });
+      window.addEventListener('afterprint',  () => { printDialogSeen = true; });
+    } catch (e) { /* very old browsers — ignore */ }
 
     function schedulePrintRestore() {
       clearTimeout(printRestoreTimer);
@@ -845,6 +943,20 @@
     }
 
     function printAllData() {
+      // 0. iPHONE FIX: iOS Safari frequently does nothing at all with
+      //    window.print() (and never allows printing from iframes / blob-URL
+      //    tabs). So on iPhone/iPad we skip the dead ends and build a REAL
+      //    PDF in-browser instead — jsPDF + html2canvas → PDF blob → new tab →
+      //    Share → Save to Files. That flow always works on iOS.
+      try {
+        if (typeof isIOSDevice === 'function' && isIOSDevice()) {
+          document.body.classList.add('print-preview');
+          schedulePrintRestore();
+          saveAsPdf();
+          return;
+        }
+      } catch (e) { /* fall through to the normal print flow */ }
+
       // 1. Reveal the main app even if triggered pre-unlock.
       const mainApp = document.getElementById('mainApp');
       if (mainApp && mainApp.style.display === 'none') {
@@ -859,6 +971,7 @@
       // 3. CRITICAL FIX FOR PHONES: synchronous print call keeps the tap
       //    gesture, so iOS Safari / Android Chrome actually open the dialog.
       let printOpened = false;
+      printDialogSeen = false;   // reset the beforeprint/afterprint witness
       try {
         window.print();
         printOpened = true;
@@ -871,13 +984,10 @@
       // 4. If the dialog never appeared (some mobile browsers block silent
       //    prints entirely), try the iframe route, then show manual fallback.
       setTimeout(() => {
-        if (!printOpened) {
-          const ok = printViaIframe();
-          if (!ok) {
-            showPrintFallbackOverlay();
-          } else {
-            schedulePrintRestore();
-          }
+        if (!printOpened || !printDialogSeen) {
+          // The native dialog never opened → don't leave phone users stuck:
+          // go straight to the guaranteed real-PDF generator.
+          saveAsPdf();
         } else {
           // Safety restore in case 'afterprint' never fires on this browser.
           schedulePrintRestore();
@@ -1254,8 +1364,11 @@
       showToast('✅ PDF ready! Tap "Save PDF".');
     }
 
-    // Bind the new button WITHOUT inline onclick so the handler still runs if
-    // any earlier script ever fails to parse.
+    // "Save PDF (Preview)" used to be bound here, but it is now a clone of the
+    // "Print / Save as PDF" button (see the print-button script in index.html):
+    // all three buttons run printAllData() — which itself falls back to
+    // saveAsPdf() on iPhones and whenever the native print dialog is blocked.
+    // The old #savePdfBtn no longer exists, so this binder is a safe no-op.
     (function bindSavePdfButton() {
       const attach = () => {
         const btn = document.getElementById('savePdfBtn');
@@ -1335,6 +1448,10 @@
       if (subjEl) subjEl.textContent = 'Email version — Subject: ' + subject;
 
       // Build complete HTML email with subject line included
+      // Sign-off date shown in the email — same "Date: DD/MM/YYYY" format as the PDF
+      const soD = new Date();
+      const signoffDate = 'Date: ' + String(soD.getDate()).padStart(2, '0') + '/' +
+        String(soD.getMonth() + 1).padStart(2, '0') + '/' + soD.getFullYear();
       let emailHTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -1351,9 +1468,22 @@
   th { background: #7a4a8a; color: #fff; padding: 10px 12px; text-align: left; border-bottom: 2px solid #5a2a6a; }
   td { padding: 8px 12px; border-bottom: 1px solid #eee; color: #222; }
   .footer { text-align: center; margin-top: 30px; color: #888; font-size: 13px; border-top: 1px solid #e0d0e8; padding-top: 20px; }
-  .signature { display: flex; justify-content: space-around; margin-top: 20px; flex-wrap: wrap; }
+  .signature { display: flex; justify-content: space-around; margin-top: 20px; flex-wrap: wrap; position: relative; z-index: 1; }
   .signature div { min-width: 200px; text-align: left; }
-  .signature img.sig { display: block; max-height: 56px; width: auto; margin: 2px 0 -10px 2px; }
+  .signature img.sig { display: block; min-height: 120px; max-height: 150px; width: auto; max-width: 420px; margin: 2px 0 -12px 2px; }  /* ENLARGED sign images (was 56px) so they are visible in the PDF */
+  /* SIGN-OFF SECTION — same format as the PDF/app: enlarged 400x179 love stamp
+     watermark sitting BEHIND the sign-off text, nudged slightly right, soft ink
+     (opacity 0.35, no glow), with the enlarged signatures on top of it. */
+  .signoff-section { position: relative; text-align: center; overflow: hidden; }
+  /* PDF-style watermark — ALSO set as INLINE styles on the <img>, because most
+     email clients strip <style> blocks; the class covers browser viewing. */
+  .stamp-watermark { display: block; position: absolute; left: calc(79% + 28px); top: 50%;
+    transform: translate(-50%, -50%) rotate(-4deg); width: 400px; height: 179px; object-fit: contain;
+    opacity: 0.35; z-index: 0; pointer-events: none; margin: 0; border: none; background: transparent; }
+  .signature-heading { position: relative; z-index: 1; }
+  /* PDF-style sign-off dates: show today's date on the dotted line, same as the app/PDF */
+  .sig-date { color: #999; white-space: nowrap; }
+  @media print { .signoff-section { overflow: visible !important; } }
   .subject-line { background: #f0e6f5; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; color: #4a2a5a; border-left: 4px solid #7a4a8a; }
   .subject-line strong { color: #5a2a6a; }
 </style>
@@ -1364,7 +1494,7 @@
     <strong>📧 Subject:</strong> ${subject}
   </div>
   
-  <img src="https://lh3.googleusercontent.com/d/1eoI5L95RQxWzs0yaDrFMtst2FFsbK_Ny" alt="Soulmate Logo" style="display:block; margin:0 auto 12px auto; width:180px; height:180px; object-fit:contain; border-radius:50%; background:#f7eef9; padding:8px; border:1px solid #d8b8e0;">
+  <img src="${isRemoteSrc(LOGO_DATA_URL) ? 'https://lh3.googleusercontent.com/d/1eoI5L95RQxWzs0yaDrFMtst2FFsbK_Ny' : LOGO_DATA_URL}" onerror="this.onerror=null;this.src='${LOGO_DATA_URL}';" alt="Soulmate Logo" style="display:block; margin:0 auto 12px auto; width:180px; height:180px; object-fit:contain; border-radius:50%; background:#f7eef9; padding:8px; border:1px solid #d8b8e0;">
   <h1>❤️ ${deep.toUpperCase()} & ${honey.toUpperCase()} ❤️</h1>
   <p style="text-align:center; color:#7a6a82; font-size:16px; letter-spacing:2px;">BDSM Contract Log Book</p>
 
@@ -1387,12 +1517,12 @@
   ${debriefTable ? `<h2>💬 Debrief Summary</h2>${debriefTable}` : ''}
   ${weeklyTable ? `<h2>📅 Weekly Reflection</h2>${weeklyTable}` : ''}
 
-  <div style="margin-top:30px; border-top:2px solid #e8d5f0; padding-top:20px;">
-    <h2>✍️ Sign‑off</h2>
-    <img src="https://lh3.googleusercontent.com/d/1xT4SnUR8dtEHP14MUMFZnYZnumAS96Fw" alt="Love Stamp" style="display:block; margin:0 auto 12px auto; width:80px; height:80px; object-fit:contain;">
-    <div class="signature">
-      <div><strong>${deep}'s Signature:</strong><img class="sig" src="https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq32eCW-ZxMasj" alt="${deep}'s Signature"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</div>
-      <div><strong>${honey}'s Signature:</strong><img class="sig" src="https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI" alt="${honey}'s Signature"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</div>
+  <div class="signoff-section" style="margin-top:30px; border-top:2px solid #e8d5f0; padding-top:20px; position:relative; text-align:center; overflow:hidden;">
+    <h2 class="signature-heading" style="position:relative; z-index:1;">✍️ Sign‑off</h2>
+    <img class="stamp-watermark" src="${isRemoteSrc(STAMP_DATA_URL) ? 'https://lh3.googleusercontent.com/d/1xT4SnUR8dtEHP14MUMFZnYZnumAS96Fw' : STAMP_DATA_URL}" onerror="this.onerror=null;this.src='${STAMP_DATA_URL}';" alt="Love Stamp" width="400" height="179" style="display:block; position:absolute; left:calc(79% + 28px); top:50%; transform:translate(-50%,-50%) rotate(-4deg); width:400px; max-width:400px; height:179px; object-fit:contain; opacity:0.35; z-index:0; margin:0; border:none;">
+    <div class="signature" style="position:relative; z-index:1;">
+      <div class="sig-block"><strong class="sig-label">${deep}'s Signature:</strong><img class="sig sig-img" src="${isRemoteSrc(DEEP_SIGN_DATA_URL) ? 'https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq32eCW-ZxMasj' : DEEP_SIGN_DATA_URL}" onerror="this.onerror=null;this.src='${DEEP_SIGN_DATA_URL}';" alt="${deep}'s Signature" style="display:block; min-height:120px; max-height:150px; width:auto; max-width:420px; margin:2px 0 -12px 2px;"><span class="sig-line" style="color:#999;">_________________</span>&nbsp;&nbsp;<span class="sig-date" style="color:#999;">${signoffDate}</span></div>
+      <div class="sig-block"><strong class="sig-label">${honey}'s Signature:</strong><img class="sig sig-img" src="${isRemoteSrc(HONEY_SIGN_DATA_URL) ? 'https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI' : HONEY_SIGN_DATA_URL}" onerror="this.onerror=null;this.src='${HONEY_SIGN_DATA_URL}';" alt="${honey}'s Signature" style="display:block; min-height:120px; max-height:150px; width:auto; max-width:420px; margin:2px 0 -12px 2px;"><span class="sig-line" style="color:#999;">_________________</span>&nbsp;&nbsp;<span class="sig-date" style="color:#999;">${signoffDate}</span></div>
     </div>
   </div>
 
