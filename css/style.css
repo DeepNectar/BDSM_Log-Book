@@ -1445,7 +1445,16 @@
        sign-off area (right edge flush, vertically centered), soft ink. It
        floats behind the text so it never shifts other items. */
     .sign-off-overlay { position: relative; }
-    .sign-off-stamp {
+    /* BUG FIX: the stamp <img> in index.html carries BOTH classes
+       ("sign-off-stamp stamp-watermark"), but ".stamp-watermark" was only ever
+       defined inside the email template in js/main.js — never here in the app
+       stylesheet. Any consumer that styled/looked up ".stamp-watermark" (the
+       exported HTML code sheet, scripts, future edits) found nothing. Define
+       the shared watermark rule ONCE for both class names so they can never
+       drift apart again. */
+    .sign-off-stamp,
+    .stamp-watermark {
+      display: block;
       position: absolute;        /* "behind text" format — watermark floats behind the sign-off text */
       left: auto;                /* RIGHT-HAND side of the sign-off area */
       right: 0;                  /* anchored to the right edge instead of an offset from the left */
@@ -1457,10 +1466,13 @@
       opacity: 0.35;             /* soft watermark so the text stays readable on top */
       z-index: 0;                /* BEHIND the sign-off text (text sits at z-index:1) */
       pointer-events: none;      /* never blocks clicks / selection on the text */
+      margin: 0;
+      border: none;
+      background: transparent;
       filter: drop-shadow(0 0 14px rgba(230, 90, 160, 0.35)) contrast(1.1) saturate(1.15);
     }
     @media print {
-      .sign-off-stamp { filter: none !important; }   /* plain ink on paper */
+      .sign-off-stamp, .stamp-watermark { filter: none !important; }   /* plain ink on paper */
     }
 
     /* Page margins adjusted so the right-side stamp and every item fit properly
@@ -1472,7 +1484,7 @@
       /* ENLARGED: bigger Soulmate logo on phones */
       .brand-logo { width: 190px; height: 190px; margin-bottom: 10px; }
       .love-stamp { width: 280px; height: 125px; left: 16px; }   /* ENLARGED (was 210x94), slight right nudge */
-      .sign-off-stamp { width: 200px; height: 89px; left: auto; right: 0; }  /* SMALLER sign-off stamp on phones (was 280x125), still right side behind the text */
+      .sign-off-stamp, .stamp-watermark { width: 200px; height: 89px; left: auto; right: 0; }  /* SMALLER sign-off stamp on phones (was 280x125), still right side behind the text */
       .password-box .brand-logo { width: 160px; height: 160px; }
       .sig-img { max-width: 100%; }   /* keep the enlarged signature inside the phone column */
     }

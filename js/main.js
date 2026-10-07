@@ -895,15 +895,17 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
       '.pv-val{border-bottom:1px solid #bbb;display:inline-block;min-width:60px;color:#222!important;}',
       // ---- sign-off area & stamps ----------------------------------------
       '.footer-note,.tab-panel#panel-final .stamp-overlay{background:#ffffff!important;border-radius:0!important;padding:8px 4px!important;}',
-      '.sign-off-overlay{position:relative!important;}',
-      '.sign-off-stamp{position:absolute!important;left:auto!important;right:0!important;top:50%!important;transform:translateY(-50%) rotate(-4deg)!important;width:260px!important;height:116px!important;object-fit:contain!important;opacity:0.35!important;z-index:0!important;pointer-events:none!important;margin:0!important;border:none!important;background:transparent!important;filter:none!important;animation:none!important;}',
+      '.sign-off-overlay,.signoff-section{position:relative!important;overflow:hidden!important;}',
+      // BUG FIX: the stamp <img> carries BOTH classes ("sign-off-stamp stamp-watermark");
+      // style both selectors here so the exported print sheet can never miss one of them.
+      '.sign-off-stamp,.stamp-watermark{display:block!important;position:absolute!important;left:auto!important;right:0!important;top:50%!important;transform:translateY(-50%) rotate(-4deg)!important;width:260px!important;height:116px!important;max-width:260px!important;object-fit:contain!important;opacity:0.35!important;z-index:0!important;pointer-events:none!important;margin:0!important;border:none!important;background:transparent!important;filter:none!important;animation:none!important;}',
       '.love-stamp{display:block!important;position:static!important;transform:rotate(-4deg)!important;width:300px!important;height:134px!important;object-fit:contain!important;margin:0 auto 10px auto!important;left:0!important;opacity:1!important;filter:none!important;animation:none!important;}',
       '.stamp-caption{color:#555!important;font-size:0.8rem!important;}',
       '.sig-img{display:block!important;min-height:56px!important;max-height:72px!important;width:auto!important;max-width:220px!important;margin:0 auto -8px auto!important;background:transparent!important;filter:none!important;}',
       '.sig-label{color:#333!important;}',
       '.sig-line,.sig-date{color:#999!important;}',
       // small-phone media rules in style.css resize the stamps; counter them
-      '@media (max-width:550px){.brand-logo,.password-box .brand-logo{width:150px!important;height:150px!important;}.love-stamp{width:300px!important;height:134px!important;left:0!important;}.sign-off-stamp{width:260px!important;height:116px!important;left:auto!important;right:0!important;}}',
+      '@media (max-width:550px){.brand-logo,.password-box .brand-logo{width:150px!important;height:150px!important;}.love-stamp{width:300px!important;height:134px!important;left:0!important;}.sign-off-stamp,.stamp-watermark{width:260px!important;height:116px!important;left:auto!important;right:0!important;}}',
       '@media (max-width:380px){.brand-logo{width:130px!important;height:130px!important;}.log-header h1{font-size:1.2rem!important;}}',
       // final safety net: any wrapper we missed must never stay dark
       'html,body,.log-container,.log-header,.tab-panel,.table-wrap,table,tr,td,th,' +
