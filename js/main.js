@@ -798,6 +798,35 @@
         'max-width:420px!important;height:auto!important;width:auto!important}}' +
         '.sig-img{min-height:120px!important;max-height:150px!important;' +
         'max-width:420px!important;height:auto!important;width:auto!important}' +
+        /* SIGN-OFF SECTION: make the emailed HTML report look EXACTLY like the
+           PDF — enlarged 400x179 love stamp watermark behind the text, nudged
+           right, soft ink (no glow), and the same enlarged signatures with the
+           dotted line + Date overlapping the ink. */
+        '.sign-off-overlay,.signoff-section{position:relative!important;text-align:center!important;' +
+        'margin-top:30px!important;border-top:2px solid #e8d5f0!important;padding-top:20px!important;' +
+        'overflow:hidden!important}' +
+        /* NOTE: only .sign-off-stamp (the PDF/app watermark class) is positioned
+           absolutely behind the text. The email report's stamp uses the extra
+           class "stamp-watermark" with INLINE styles, because many email clients
+           strip <style> blocks — inline keeps it looking right inside the mail. */
+        '.sign-off-stamp{display:block!important;position:absolute!important;' +
+        'left:calc(79% + 28px)!important;top:50%!important;transform:translate(-50%,-50%) rotate(-4deg)!important;' +
+        'width:400px!important;height:179px!important;object-fit:contain!important;opacity:0.35!important;' +
+        'z-index:0!important;pointer-events:none!important;margin:0!important;border:none!important;' +
+        'filter:none!important;background:none!important;box-shadow:none!important}' +
+        '.sign-off-overlay h4,.signoff-section h2,.signature-heading{position:relative!important;z-index:1!important}' +
+        '.sign-off-overlay > div,.signature{position:relative!important;z-index:1!important;' +
+        'display:flex!important;justify-content:space-around!important;flex-wrap:wrap!important;' +
+        'gap:30px!important;margin-top:10px!important}' +
+        '.sig-block,.signature > div{min-width:200px!important;text-align:left!important}' +
+        '.sig-label,.signature strong{display:inline-block!important;color:#333!important;font-weight:600!important}' +
+        '.sig-img,.signature img.sig{display:block!important;min-height:120px!important;max-height:150px!important;' +
+        'height:auto!important;width:auto!important;max-width:420px!important;margin:2px 0 -12px 2px!important;' +
+        'background:transparent!important}' +
+        '.sig-line,.signature span[style*="#999"]{display:inline!important;color:#999!important;letter-spacing:1px!important}' +
+        '.sig-date{color:#999!important;white-space:nowrap!important}' +
+        '@media print{.sign-off-stamp,.stamp-watermark{width:400px!important;height:179px!important;max-width:400px!important;' +
+        'left:calc(79% + 28px)!important;opacity:0.35!important;filter:none!important}}' +
         '</style></head><body class="print-preview">' + clone.innerHTML + '</body></html>';
     }
 
@@ -1212,6 +1241,10 @@
       document.getElementById('emailSubjectDisplay').textContent = subject;
 
       // Build complete HTML email with subject line included
+      // Sign-off date shown in the email — same "Date: DD/MM/YYYY" format as the PDF
+      const soD = new Date();
+      const signoffDate = 'Date: ' + String(soD.getDate()).padStart(2, '0') + '/' +
+        String(soD.getMonth() + 1).padStart(2, '0') + '/' + soD.getFullYear();
       let emailHTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -1228,9 +1261,22 @@
   th { background: #7a4a8a; color: #fff; padding: 10px 12px; text-align: left; border-bottom: 2px solid #5a2a6a; }
   td { padding: 8px 12px; border-bottom: 1px solid #eee; color: #222; }
   .footer { text-align: center; margin-top: 30px; color: #888; font-size: 13px; border-top: 1px solid #e0d0e8; padding-top: 20px; }
-  .signature { display: flex; justify-content: space-around; margin-top: 20px; flex-wrap: wrap; }
+  .signature { display: flex; justify-content: space-around; margin-top: 20px; flex-wrap: wrap; position: relative; z-index: 1; }
   .signature div { min-width: 200px; text-align: left; }
   .signature img.sig { display: block; min-height: 120px; max-height: 150px; width: auto; max-width: 420px; margin: 2px 0 -12px 2px; }  /* ENLARGED sign images (was 56px) so they are visible in the PDF */
+  /* SIGN-OFF SECTION — same format as the PDF/app: enlarged 400x179 love stamp
+     watermark sitting BEHIND the sign-off text, nudged slightly right, soft ink
+     (opacity 0.35, no glow), with the enlarged signatures on top of it. */
+  .signoff-section { position: relative; text-align: center; overflow: hidden; }
+  /* PDF-style watermark — ALSO set as INLINE styles on the <img>, because most
+     email clients strip <style> blocks; the class covers browser viewing. */
+  .stamp-watermark { display: block; position: absolute; left: calc(79% + 28px); top: 50%;
+    transform: translate(-50%, -50%) rotate(-4deg); width: 400px; height: 179px; object-fit: contain;
+    opacity: 0.35; z-index: 0; pointer-events: none; margin: 0; border: none; background: transparent; }
+  .signature-heading { position: relative; z-index: 1; }
+  /* PDF-style sign-off dates: show today's date on the dotted line, same as the app/PDF */
+  .sig-date { color: #999; white-space: nowrap; }
+  @media print { .signoff-section { overflow: visible !important; } }
   .subject-line { background: #f0e6f5; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; color: #4a2a5a; border-left: 4px solid #7a4a8a; }
   .subject-line strong { color: #5a2a6a; }
 </style>
@@ -1264,12 +1310,12 @@
   ${debriefTable ? `<h2>💬 Debrief Summary</h2>${debriefTable}` : ''}
   ${weeklyTable ? `<h2>📅 Weekly Reflection</h2>${weeklyTable}` : ''}
 
-  <div style="margin-top:30px; border-top:2px solid #e8d5f0; padding-top:20px;">
-    <h2>✍️ Sign‑off</h2>
-    <img src="https://lh3.googleusercontent.com/d/1xT4SnUR8dtEHP14MUMFZnYZnumAS96Fw" alt="Love Stamp" style="display:block; margin:0 auto 12px auto; width:80px; height:80px; object-fit:contain;">
-    <div class="signature">
-      <div><strong>${deep}'s Signature:</strong><img class="sig" src="https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq32eCW-ZxMasj" alt="${deep}'s Signature"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</div>
-      <div><strong>${honey}'s Signature:</strong><img class="sig" src="https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI" alt="${honey}'s Signature"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</div>
+  <div class="signoff-section" style="margin-top:30px; border-top:2px solid #e8d5f0; padding-top:20px; position:relative; text-align:center; overflow:hidden;">
+    <h2 class="signature-heading" style="position:relative; z-index:1;">✍️ Sign‑off</h2>
+    <img class="stamp-watermark" src="https://lh3.googleusercontent.com/d/1xT4SnUR8dtEHP14MUMFZnYZnumAS96Fw" alt="Love Stamp" width="400" height="179" style="display:block; position:absolute; left:calc(79% + 28px); top:50%; transform:translate(-50%,-50%) rotate(-4deg); width:400px; max-width:400px; height:179px; object-fit:contain; opacity:0.35; z-index:0; margin:0; border:none;">
+    <div class="signature" style="position:relative; z-index:1;">
+      <div class="sig-block"><strong class="sig-label">${deep}'s Signature:</strong><img class="sig sig-img" src="https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq32eCW-ZxMasj" alt="${deep}'s Signature" style="display:block; min-height:120px; max-height:150px; width:auto; max-width:420px; margin:2px 0 -12px 2px;"><span class="sig-line" style="color:#999;">_________________</span>&nbsp;&nbsp;<span class="sig-date" style="color:#999;">${signoffDate}</span></div>
+      <div class="sig-block"><strong class="sig-label">${honey}'s Signature:</strong><img class="sig sig-img" src="https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI" alt="${honey}'s Signature" style="display:block; min-height:120px; max-height:150px; width:auto; max-width:420px; margin:2px 0 -12px 2px;"><span class="sig-line" style="color:#999;">_________________</span>&nbsp;&nbsp;<span class="sig-date" style="color:#999;">${signoffDate}</span></div>
     </div>
   </div>
 
