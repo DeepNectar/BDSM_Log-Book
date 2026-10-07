@@ -780,6 +780,17 @@
         'td input,td select,td textarea,.pv-val{color:#1a1a1a!important;-webkit-text-fill-color:#1a1a1a!important;' +
         'background-color:transparent!important;text-shadow:none!important}' +
         '.sign-off-stamp{filter:none!important}' +
+        /* ENLARGED love stamp (footer stamp + sign-off watermark) and moved
+           slightly to the RIGHT — same values as the screen CSS so the
+           PDF/print matches the app. */
+        '@media print{.love-stamp{width:400px!important;height:179px!important;' +
+        'position:relative!important;left:28px!important}' +
+        '.sign-off-stamp{width:400px!important;height:179px!important;' +
+        'left:calc(79% + 28px)!important}}' +
+        '.love-stamp{width:400px!important;height:179px!important;' +
+        'position:relative!important;left:28px!important}' +
+        '.sign-off-stamp{width:400px!important;height:179px!important;' +
+        'left:calc(79% + 28px)!important}' +
         /* ENLARGED sign images so they are clearly visible in the PDF / print:
            both signature images get a big guaranteed height (min-height keeps
            them large even if the hosted image reports a tiny intrinsic size). */
