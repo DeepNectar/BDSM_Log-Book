@@ -225,8 +225,6 @@
     <!-- Global action buttons -->
     <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:25px; padding-top:18px; border-top:1px solid rgba(200,170,220,0.08); justify-content:center;">
       <button class="btn btn-danger" id="printPdfBtn"><i class="fas fa-file-pdf"></i> Print / Save as PDF</button>
-      <button class="btn btn-primary" id="savePdfBtn"><i class="fas fa-download"></i> Generate PDF (Preview)</button>
-      <button class="btn btn-success" onclick="generateHtmlCode()"><i class="fas fa-code"></i> Generate HTML Code</button>
       <button class="btn" onclick="generateEmailHTML()"><i class="fas fa-envelope-open-text"></i> Email HTML</button>
       <button class="btn btn-success" onclick="saveAllData()"><i class="fas fa-save"></i> Save All Data</button>
       <button class="btn btn-warning" onclick="clearAllCloudData()"><i class="fas fa-trash-alt"></i> Clear All Cloud Data</button>
@@ -260,9 +258,9 @@
 
   <!-- Print buttons: bind directly so window.print() runs inside the tap
        gesture (phones silently block prints that come from async code).
-      "Save PDF (Preview)" (printPdfBtn2) and "Generate Email HTML"
-      (printPdfBtn3) are clones of "Print / Save as PDF" (printPdfBtn):
-      same look, same handler — all three do exactly the same thing. -->
+      "Print / Save as PDF" (printPdfBtn) is the single PDF button — on phones
+      it automatically falls back to the real in-browser PDF generator
+      (jsPDF + html2canvas) whenever the native print dialog is blocked. -->
   <script>
     (function () {
       function onPrintTap(e) {
@@ -272,7 +270,7 @@
         }
       }
       document.addEventListener('DOMContentLoaded', function () {
-        ['printPdfBtn', 'printPdfBtn2', 'printPdfBtn3'].forEach(function (id) {
+        ['printPdfBtn'].forEach(function (id) {
           var btn = document.getElementById(id);
           if (!btn) return;
           var touchUsed = false;

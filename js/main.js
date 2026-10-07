@@ -864,7 +864,14 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
       '@media print{html,body{background:#fff!important}.log-container{background:#fff!important;color:#222!important;text-shadow:none!important}}' +
       'html,body{background:#fff!important;margin:0;padding:0}' +
       '.log-container{background:#fff!important;color:#222!important;text-shadow:none!important;max-width:100%!important;border:none!important;box-shadow:none!important}' +
-      '.pv-val{border-bottom:1px solid #bbb;display:inline-block;min-width:60px}';
+      '.pv-val{border-bottom:1px solid #bbb;display:inline-block;min-width:60px}' +
+      // PHONE PDF FIX: html2canvas does not reliably paint the <html>/<body>
+      // backdrop of the iframe it captures, which left phone users with a
+      // near-invisible (dark-on-dark) PDF. Force an opaque white paper layer
+      // on every wrapper element so the captured pixels are always dark ink
+      // on white — identical result on phone and laptop.
+      'html,body,.log-container,.log-header,.tab-panel,.table-wrap,table,tr,td,th,' +
+      '.signoff-section,.stamp-overlay,.footer,.footer-note{background-color:#ffffff!important;background-image:none!important;color:#222!important;}';
 
     // ===== HTML GENERATION (code only — for copying) =====
     // Produces the complete standalone HTML document string of the whole log
@@ -1160,8 +1167,15 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
           await waitForImages(fdoc);
         } catch (e) { /* ignore */ }
 
+        // PHONE VISIBILITY FIX: on phones html2canvas reports a small device
+        // pixel ratio (or none at all), so the old fixed scale:2 produced a
+        // low-resolution canvas that looked blurry / washed out when zoomed on
+        // a phone screen. Scale up with the real DPR (min 3) so every page is
+        // rendered crisp and readable on mobile too.
+        const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 4));
+        const pdfScale = Math.max(3, dpr * 2);
         const canvas = await window.html2canvas(sheet.holder, {
-          scale: 2,                 // crisp text on phones & laptops
+          scale: pdfScale,          // crisp text on phones & laptops
           backgroundColor: '#ffffff',
           useCORS: true,            // needed for the Google-hosted logo/signatures
           allowTaint: false,
@@ -1491,7 +1505,7 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
   .footer { text-align: center; margin-top: 30px; color: #888; font-size: 13px; border-top: 1px solid #e0d0e8; padding-top: 20px; }
   .signature { display: flex; justify-content: space-around; margin-top: 20px; flex-wrap: wrap; position: relative; z-index: 1; }
   .signature div { min-width: 200px; text-align: left; }
-  .signature img.sig { display: block; min-height: 120px; max-height: 150px; width: auto; max-width: 420px; margin: 2px 0 -12px 2px; }  /* ENLARGED sign images (was 56px) so they are visible in the PDF */
+  .signature img.sig { display: block; min-height: 56px; max-height: 72px; width: auto; max-width: 220px; margin: 2px 0 -8px 2px; }  /* COMPACT sign size — matches the on-screen & email signature scale */
   /* SIGN-OFF SECTION — same format as the PDF/app: enlarged 400x179 love stamp
      watermark sitting BEHIND the sign-off text, nudged slightly right, soft ink
      (opacity 0.35, no glow), with the enlarged signatures on top of it. */
@@ -1542,8 +1556,8 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
     <h2 class="signature-heading" style="position:relative; z-index:1;">✍️ Sign‑off</h2>
     <img class="stamp-watermark" src="${STAMP_DATA_URL}" alt="Love Stamp" width="400" height="179" style="display:block; position:absolute; left:calc(79% + 28px); top:50%; transform:translate(-50%,-50%) rotate(-4deg); width:400px; max-width:400px; height:179px; object-fit:contain; opacity:0.35; z-index:0; margin:0; border:none;">
     <div class="signature" style="position:relative; z-index:1;">
-      <div class="sig-block"><strong class="sig-label">${deep}'s Signature:</strong><img class="sig sig-img" src="${DEEP_SIGN_DATA_URL}" alt="${deep}'s Signature" style="display:block; min-height:120px; max-height:150px; width:auto; max-width:420px; margin:2px 0 -12px 2px;"><span class="sig-line" style="color:#999;">_________________</span>&nbsp;&nbsp;<span class="sig-date" style="color:#999;">${signoffDate}</span></div>
-      <div class="sig-block"><strong class="sig-label">${honey}'s Signature:</strong><img class="sig sig-img" src="${HONEY_SIGN_DATA_URL}" alt="${honey}'s Signature" style="display:block; min-height:120px; max-height:150px; width:auto; max-width:420px; margin:2px 0 -12px 2px;"><span class="sig-line" style="color:#999;">_________________</span>&nbsp;&nbsp;<span class="sig-date" style="color:#999;">${signoffDate}</span></div>
+      <div class="sig-block"><strong class="sig-label">${deep}'s Signature:</strong><img class="sig sig-img" src="${DEEP_SIGN_DATA_URL}" alt="${deep}'s Signature" style="display:block; min-height:56px; max-height:72px; width:auto; max-width:220px; margin:2px 0 -8px 2px;"><span class="sig-line" style="color:#999;">_________________</span>&nbsp;&nbsp;<span class="sig-date" style="color:#999;">${signoffDate}</span></div>
+      <div class="sig-block"><strong class="sig-label">${honey}'s Signature:</strong><img class="sig sig-img" src="${HONEY_SIGN_DATA_URL}" alt="${honey}'s Signature" style="display:block; min-height:56px; max-height:72px; width:auto; max-width:220px; margin:2px 0 -8px 2px;"><span class="sig-line" style="color:#999;">_________________</span>&nbsp;&nbsp;<span class="sig-date" style="color:#999;">${signoffDate}</span></div>
     </div>
   </div>
 
