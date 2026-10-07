@@ -8,8 +8,8 @@
   <meta name="theme-color" content="#0b0a0c">
   <title>Deep & Honey's BDSM Contract Log Book</title>
   <!-- SoulMate Logo as favicon -->
-  <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1eoI5L95RQxWzs0yaDrFMtst2FFsbK_Ny">
-  <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1eoI5L95RQxWzs0yaDrFMtst2FFsbK_Ny">
+  <link rel="icon" type="image/png" href="assets/soulmate-logo.png">
+  <link rel="apple-touch-icon" href="assets/soulmate-logo.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -40,7 +40,7 @@
   <!-- PASSWORD OVERLAY - Full screen, hidden after login -->
   <div id="passwordOverlay">
     <div class="password-box">
-      <img class="brand-logo" src="https://lh3.googleusercontent.com/d/1eoI5L95RQxWzs0yaDrFMtst2FFsbK_Ny" alt="Soulmate Logo">
+      <img class="brand-logo" src="assets/soulmate-logo.png" onerror="this.onerror=null;this.src='https://lh3.googleusercontent.com/d/1eoI5L95RQxWzs0yaDrFMtst2FFsbK_Ny';" alt="Soulmate Logo">
       <h2><i class="fas fa-lock"></i> Log Book</h2>
       <p>Enter the key to unlock</p>
       <div class="hint"><i class="fas fa-lightbulb"></i> Hint: Our pet name + @ + the Date & Month we met + @</div>
@@ -58,7 +58,7 @@
   <!-- MAIN CONTAINER -->
   <div class="log-container" id="mainApp" style="display:none;">
     <div class="log-header">
-      <img class="brand-logo" src="https://lh3.googleusercontent.com/d/1eoI5L95RQxWzs0yaDrFMtst2FFsbK_Ny" alt="Soulmate Logo">
+      <img class="brand-logo" src="assets/soulmate-logo.png" onerror="this.onerror=null;this.src='https://lh3.googleusercontent.com/d/1eoI5L95RQxWzs0yaDrFMtst2FFsbK_Ny';" alt="Soulmate Logo">
       <h1><i class="fas fa-heart"></i> DEEP & HONEY <i class="fas fa-heart"></i></h1>
       <div class="sub">BDSM Contract Log Book · Multi‑Day</div>
       <!-- ⬅️ NEW: Sync badge -->
@@ -189,12 +189,12 @@
         <div style="display:flex; flex-wrap:wrap; gap:30px; margin-top:10px; position:relative; z-index:1;">
           <div class="sig-block">
             <span class="sig-label">Deep's Signature:</span>
-            <img class="sig-img" src="https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq3eCW-ZxMasj" alt="Deep's Signature" onerror="window.sigFallback && sigFallback(this);">
+            <img class="sig-img" src="assets/deep-sign.png" alt="Deep's Signature" onerror="window.sigFallback && sigFallback(this);">
             <span class="sig-line">_________________</span>&nbsp;&nbsp;<span class="sig-date">Date: 07/10/2026</span>
           </div>
           <div class="sig-block">
             <span class="sig-label">Honey's Signature:</span>
-            <img class="sig-img" src="https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI" alt="Honey's Signature" onerror="window.sigFallback && sigFallback(this);">
+            <img class="sig-img" src="assets/honey-sign.png" alt="Honey's Signature" onerror="window.sigFallback && sigFallback(this);">
             <span class="sig-line">_________________</span>&nbsp;&nbsp;<span class="sig-date">Date: 07/10/2026</span>
           </div>
         </div>
@@ -227,7 +227,6 @@
       <button class="btn btn-danger" id="printPdfBtn"><i class="fas fa-file-pdf"></i> Print / Save as PDF</button>
       <button class="btn btn-primary" id="savePdfBtn"><i class="fas fa-download"></i> Generate PDF (Preview)</button>
       <button class="btn btn-success" onclick="generateHtmlCode()"><i class="fas fa-code"></i> Generate HTML Code</button>
-      <button class="btn btn-primary" onclick="emailPDF()"><i class="fas fa-envelope"></i> Email PDF</button>
       <button class="btn" onclick="generateEmailHTML()"><i class="fas fa-envelope-open-text"></i> Email HTML</button>
       <button class="btn btn-success" onclick="saveAllData()"><i class="fas fa-save"></i> Save All Data</button>
       <button class="btn btn-warning" onclick="clearAllCloudData()"><i class="fas fa-trash-alt"></i> Clear All Cloud Data</button>
