@@ -1277,8 +1277,11 @@
       showToast('✅ PDF ready! Tap "Save PDF" or "Open in Safari".');
     }
 
-    // Bind the new button WITHOUT inline onclick so the handler still runs if
-    // any earlier script ever fails to parse.
+    // "Save PDF (Preview)" used to be bound here, but it is now a clone of the
+    // "Print / Save as PDF" button (see the print-button script in index.html):
+    // all three buttons run printAllData() — which itself falls back to
+    // saveAsPdf() on iPhones and whenever the native print dialog is blocked.
+    // The old #savePdfBtn no longer exists, so this binder is a safe no-op.
     (function bindSavePdfButton() {
       const attach = () => {
         const btn = document.getElementById('savePdfBtn');
