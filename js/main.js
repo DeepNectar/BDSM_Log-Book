@@ -860,18 +860,57 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
     }
 
     // White-paper overrides applied on top of the app CSS for both outputs.
-    const PAPER_OVERRIDES_CSS =
-      '@media print{html,body{background:#fff!important}.log-container{background:#fff!important;color:#222!important;text-shadow:none!important}}' +
-      'html,body{background:#fff!important;margin:0;padding:0}' +
-      '.log-container{background:#fff!important;color:#222!important;text-shadow:none!important;max-width:100%!important;border:none!important;box-shadow:none!important}' +
-      '.pv-val{border-bottom:1px solid #bbb;display:inline-block;min-width:60px}' +
-      // PHONE PDF FIX: html2canvas does not reliably paint the <html>/<body>
-      // backdrop of the iframe it captures, which left phone users with a
-      // near-invisible (dark-on-dark) PDF. Force an opaque white paper layer
-      // on every wrapper element so the captured pixels are always dark ink
-      // on white — identical result on phone and laptop.
+    // BLANK-PDF-FIX (phones): this used to be only a handful of one-off rules,
+    // while css/style.css still forced the whole document into the dark glass
+    // app theme (transparent body, rgba panels, light text). On phones that
+    // produced dark-on-dark or completely blank PDFs. Now we ship a complete
+    // printable stylesheet (PRINT_SHEET_CSS below) whose selectors exactly
+    // mirror style.css, so every dark background / light text rule is
+    // overridden 1:1 with !important paper styles. Because these rules live in
+    // a <style> tag AFTER the copied app CSS, they win on specificity ties —
+    // identical, readable output on phone and laptop.
+    const PRINT_SHEET_CSS = [
+      // ---- page frame -------------------------------------------------
+      '@page{margin:14mm 12mm;}',
+      'html,body{background:#ffffff!important;background-image:none!important;height:auto!important;overflow:visible!important;min-height:0!important;margin:0!important;padding:0!important;max-width:100%!important;}',
+      // hide everything decorative / interactive in the exported sheet
+      '.bg-effect,.glow-layer,.mist-container,.hearts-container,.sparkle,.heart-particle,.mist-particle,#passwordOverlay,.toast,#syncBadgeWrap,.email-modal,.tab-nav,.btn,.btn-group,#printFallback,#pdfPreviewOverlay{display:none!important;}',
+      // ---- main container (paper) -------------------------------------
+      '#mainApp,.log-container{display:block!important;background:#ffffff!important;background-image:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:none!important;border:none!important;border-radius:0!important;padding:10px 6px!important;max-width:100%!important;width:100%!important;color:#222!important;text-shadow:none!important;animation:none!important;opacity:1!important;filter:none!important;transform:none!important;}',
+      // ---- header -------------------------------------------------------
+      '.log-header{padding-bottom:12px!important;margin-bottom:14px!important;border-bottom:2px solid #e8d5f0!important;}',
+      '.log-header h1{font-size:1.5rem!important;color:#6a3f7a!important;background:none!important;-webkit-background-clip:unset!important;background-clip:unset!important;text-shadow:none!important;}',
+      '.log-header .sub{color:#555!important;font-size:0.8rem!important;}',
+      '.brand-logo{width:150px!important;height:150px!important;margin:0 auto 10px auto!important;filter:none!important;animation:none!important;}',
+      // ---- panels: ALL tabs visible, no animations ----------------------
+      '.tab-panel,.tab-panel:not(.active),.tab-panel.active{display:block!important;animation:none!important;opacity:1!important;transform:none!important;page-break-inside:avoid;break-inside:avoid;margin-bottom:22px!important;}',
+      '.tab-panel h3,.tab-panel h4{color:#333!important;font-size:1rem!important;}',
+      // ---- tables ---------------------------------------------------------
+      '.table-wrap{background:#ffffff!important;border:1px solid #bbb!important;border-radius:6px!important;overflow:visible!important;padding:2px!important;}',
+      'table{width:100%!important;min-width:0!important;font-size:11px!important;border-collapse:collapse!important;}',
+      'th{background:#e8e0f0!important;color:#222!important;border-bottom:2px solid #6a3f7a!important;padding:4px 6px!important;font-size:11px!important;}',
+      'td{color:#222!important;border-bottom:1px solid #ddd!important;padding:4px 6px!important;font-size:11px!important;background:transparent!important;}',
+      // inputs/selects were replaced by .pv-val spans, but keep a fallback
+      'td input,td select,td textarea{background:transparent!important;border:1px solid #ccc!important;color:#222!important;text-shadow:none!important;padding:3px 5px!important;font-size:11px!important;}',
+      '.pv-val{border-bottom:1px solid #bbb;display:inline-block;min-width:60px;color:#222!important;}',
+      // ---- sign-off area & stamps ----------------------------------------
+      '.footer-note,.tab-panel#panel-final .stamp-overlay{background:#ffffff!important;border-radius:0!important;padding:8px 4px!important;}',
+      '.sign-off-overlay{position:relative!important;}',
+      '.sign-off-stamp{position:absolute!important;left:calc(79% + 28px)!important;top:50%!important;transform:translate(-50%,-50%) rotate(-4deg)!important;width:260px!important;height:116px!important;object-fit:contain!important;opacity:0.35!important;z-index:0!important;pointer-events:none!important;margin:0!important;border:none!important;background:transparent!important;filter:none!important;animation:none!important;}',
+      '.love-stamp{display:block!important;position:static!important;transform:rotate(-4deg)!important;width:300px!important;height:134px!important;object-fit:contain!important;margin:0 auto 10px auto!important;left:0!important;opacity:1!important;filter:none!important;animation:none!important;}',
+      '.stamp-caption{color:#555!important;font-size:0.8rem!important;}',
+      '.sig-img{display:block!important;min-height:56px!important;max-height:72px!important;width:auto!important;max-width:220px!important;margin:0 auto -8px auto!important;background:transparent!important;filter:none!important;}',
+      '.sig-label{color:#333!important;}',
+      '.sig-line,.sig-date{color:#999!important;}',
+      // small-phone media rules in style.css resize the stamps; counter them
+      '@media (max-width:550px){.brand-logo,.password-box .brand-logo{width:150px!important;height:150px!important;}.love-stamp{width:300px!important;height:134px!important;left:0!important;}.sign-off-stamp{width:260px!important;height:116px!important;left:calc(79% + 28px)!important;}}',
+      '@media (max-width:380px){.brand-logo{width:130px!important;height:130px!important;}.log-header h1{font-size:1.2rem!important;}}',
+      // final safety net: any wrapper we missed must never stay dark
       'html,body,.log-container,.log-header,.tab-panel,.table-wrap,table,tr,td,th,' +
-      '.signoff-section,.stamp-overlay,.footer,.footer-note{background-color:#ffffff!important;background-image:none!important;color:#222!important;}';
+      '.signoff-section,.stamp-overlay,.footer,.footer-note{background-color:#ffffff!important;background-image:none!important;}'
+    ].join('\n');
+
+    const PAPER_OVERRIDES_CSS = PRINT_SHEET_CSS;
 
     // ===== HTML GENERATION (code only — for copying) =====
     // Produces the complete standalone HTML document string of the whole log
@@ -1089,12 +1128,22 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
         const html = buildPrintDocumentHTML();
         const holder = document.createElement('div');
         holder.setAttribute('aria-hidden', 'true');
+        // BLANK-PDF-FIX (phones): the holder used to sit at left:-100000px.
+        // html2canvas clones that subtree and re-renders it at its REAL page
+        // coordinates — i.e. 100000px off-screen — so on mobile browsers the
+        // clone fell outside the render window and every captured page came
+        // out completely blank. Now the sheet is positioned just below the
+        // visible viewport (still fully in the document, invisible to the
+        // user) so html2canvas rasterises exactly what it lays out.
         holder.style.cssText =
-          'position:fixed;left:-100000px;top:0;width:' + PDF_SHEET_WIDTH_PX + 'px;' +
-          'height:1200px;background:#ffffff;color:#222;z-index:-1;overflow:visible;';
+          'position:absolute;left:0;top:' + (window.scrollY || 0) + 'px;width:' + PDF_SHEET_WIDTH_PX + 'px;' +
+          'height:1200px;background:#ffffff;color:#222;z-index:-10;opacity:0.99;overflow:visible;pointer-events:none;';
 
         const frame = document.createElement('iframe');
-        frame.setAttribute('sandbox', 'allow-same-origin');
+        // BLANK-PDF-FIX: no sandbox attribute — a sandboxed iframe made the
+        // frame document cross-origin, which taints the html2canvas output on
+        // several mobile browsers and yields an empty canvas/PDF.
+        frame.setAttribute('scrolling', 'no');
         frame.style.cssText = 'width:100%;height:100%;border:0;background:#fff;display:block;';
         holder.appendChild(frame);
         document.body.appendChild(holder);
@@ -1174,7 +1223,16 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
         // rendered crisp and readable on mobile too.
         const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 4));
         const pdfScale = Math.max(3, dpr * 2);
-        const canvas = await window.html2canvas(sheet.holder, {
+        // BLANK-PDF-FIX (phones): capture the IFRAME DOCUMENT itself instead
+        // of the outer holder div. Capturing an element that merely contains
+        // an iframe makes html2canvas re-render the subtree at the element's
+        // real page coordinates — which previously (off-screen holder) landed
+        // outside the render window and produced an entirely blank canvas and
+        // a blank PDF on phones. DocumentElement rendering also honours the
+        // sheet's own @page/print CSS exactly like the laptop flow.
+        const captureTarget = (sheet.frame && sheet.frame.contentDocument &&
+                               sheet.frame.contentDocument.documentElement) || sheet.holder;
+        const canvas = await window.html2canvas(captureTarget, {
           scale: pdfScale,          // crisp text on phones & laptops
           backgroundColor: '#ffffff',
           useCORS: true,            // needed for the Google-hosted logo/signatures
@@ -1506,14 +1564,15 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
   .signature { display: flex; justify-content: space-around; margin-top: 20px; flex-wrap: wrap; position: relative; z-index: 1; }
   .signature div { min-width: 200px; text-align: left; }
   .signature img.sig { display: block; min-height: 56px; max-height: 72px; width: auto; max-width: 220px; margin: 2px 0 -8px 2px; }  /* COMPACT sign size — matches the on-screen & email signature scale */
-  /* SIGN-OFF SECTION — same format as the PDF/app: enlarged 400x179 love stamp
-     watermark sitting BEHIND the sign-off text, nudged slightly right, soft ink
-     (opacity 0.35, no glow), with the enlarged signatures on top of it. */
+  /* SIGN-OFF SECTION — same format as the PDF/app: a SMALLER love stamp
+     watermark (260x116, was 400x179) sitting BEHIND the sign-off text, nudged
+     slightly right, soft ink (opacity 0.35, no glow), with the compact
+     signatures on top of it. */
   .signoff-section { position: relative; text-align: center; overflow: hidden; }
   /* PDF-style watermark — ALSO set as INLINE styles on the <img>, because most
      email clients strip <style> blocks; the class covers browser viewing. */
   .stamp-watermark { display: block; position: absolute; left: calc(79% + 28px); top: 50%;
-    transform: translate(-50%, -50%) rotate(-4deg); width: 400px; height: 179px; object-fit: contain;
+    transform: translate(-50%, -50%) rotate(-4deg); width: 260px; height: 116px; object-fit: contain;
     opacity: 0.35; z-index: 0; pointer-events: none; margin: 0; border: none; background: transparent; }
   .signature-heading { position: relative; z-index: 1; }
   /* PDF-style sign-off dates: show today's date on the dotted line, same as the app/PDF */
@@ -1554,7 +1613,7 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
 
   <div class="signoff-section" style="margin-top:30px; border-top:2px solid #e8d5f0; padding-top:20px; position:relative; text-align:center; overflow:hidden;">
     <h2 class="signature-heading" style="position:relative; z-index:1;">✍️ Sign‑off</h2>
-    <img class="stamp-watermark" src="${STAMP_DATA_URL}" alt="Love Stamp" width="400" height="179" style="display:block; position:absolute; left:calc(79% + 28px); top:50%; transform:translate(-50%,-50%) rotate(-4deg); width:400px; max-width:400px; height:179px; object-fit:contain; opacity:0.35; z-index:0; margin:0; border:none;">
+    <img class="stamp-watermark" src="${STAMP_DATA_URL}" alt="Love Stamp" width="260" height="116" style="display:block; position:absolute; left:calc(79% + 28px); top:50%; transform:translate(-50%,-50%) rotate(-4deg); width:260px; max-width:260px; height:116px; object-fit:contain; opacity:0.35; z-index:0; margin:0; border:none;">
     <div class="signature" style="position:relative; z-index:1;">
       <div class="sig-block"><strong class="sig-label">${deep}'s Signature:</strong><img class="sig sig-img" src="${DEEP_SIGN_DATA_URL}" alt="${deep}'s Signature" style="display:block; min-height:56px; max-height:72px; width:auto; max-width:220px; margin:2px 0 -8px 2px;"><span class="sig-line" style="color:#999;">_________________</span>&nbsp;&nbsp;<span class="sig-date" style="color:#999;">${signoffDate}</span></div>
       <div class="sig-block"><strong class="sig-label">${honey}'s Signature:</strong><img class="sig sig-img" src="${HONEY_SIGN_DATA_URL}" alt="${honey}'s Signature" style="display:block; min-height:56px; max-height:72px; width:auto; max-width:220px; margin:2px 0 -8px 2px;"><span class="sig-line" style="color:#999;">_________________</span>&nbsp;&nbsp;<span class="sig-date" style="color:#999;">${signoffDate}</span></div>
