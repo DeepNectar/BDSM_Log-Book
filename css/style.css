@@ -1314,6 +1314,7 @@
       .love-stamp { width: 210px; height: 94px; }
       .sign-off-stamp { width: 210px; height: 94px; }  /* scaled for narrow screens, still positioned at 79% (right side) behind the text */
       .password-box .brand-logo { width: 160px; height: 160px; }
+      .sig-img { max-width: 100%; }   /* keep the enlarged signature inside the phone column */
     }
 
     /* ---------- SIGNATURES: sit exactly ON the dotted line ---------- */
@@ -1331,11 +1332,14 @@
     }
     .sig-img {
       display: block;
-      max-height: 96px;          /* INCREASED sign image size (was 56px) */
+      min-height: 120px;         /* ENLARGED sign image size (was 56px / 96px) —
+                                   also guarantees the ink stays big in the PDF
+                                   even if the hosted file reports a tiny size */
+      max-height: 150px;         /* ENLARGED sign image size */
       height: auto;
       width: auto;
-      max-width: 380px;          /* INCREASED sign image size (was 220px) */
-      margin: 0 auto -10px auto; /* ink overlaps the dotted line from above */
+      max-width: 420px;          /* ENLARGED sign image size (was 220px / 380px) */
+      margin: 0 auto -12px auto; /* ink overlaps the dotted line from above */
       background: transparent;
       pointer-events: none;
     }
@@ -1349,6 +1353,13 @@
       white-space: nowrap;
     }
     @media print {
-      .sig-img { max-height: 84px !important; }   /* INCREASED in PDF too (was 48px) */
+      /* ENLARGED in the PDF / printed sheet too (was 84px max-height) — the
+         signatures were barely visible on paper. min-height guarantees the ink
+         stays big even if the hosted image reports a small intrinsic size. */
+      .sig-img {
+        min-height: 120px !important;
+        max-height: 150px !important;
+        max-width: 420px !important;
+      }
       .sig-label, .sig-line, .sig-date { color: #333 !important; }
     }
