@@ -1281,28 +1281,37 @@
       margin-bottom: 8px;
     }
 
-    /* Love stamp in the sign-off area: back to NORMAL size/format — same as the
-       footer love stamp (normal in-flow image, own row above the sign-off text).
-       Only its SIZE was ever requested to change; now restored to normal. */
+    /* Love stamp in the sign-off area: NORMAL size/format (same as the footer
+       love stamp), moved to the LEFT side of the area by the same amount as
+       before (79%). It floats behind the text so it never shifts other items. */
+    .sign-off-overlay { position: relative; }
     .sign-off-stamp {
-      display: block;
-      margin: 0 auto 10px auto;
+      position: absolute;        /* "behind text" float — stays inside sign-off area */
+      left: -79%;                /* moved to the LEFT side by 79% (as previously requested) */
+      top: 50%;                  /* vertically centered within the sign-off area */
+      transform: translateY(-50%) rotate(-4deg);
       width: 300px;              /* normal size (identical to .love-stamp) */
       height: 134px;             /* stamp art is 1536x1024 — keep native aspect ratio */
       object-fit: contain;
-      transform: rotate(-4deg);
       opacity: 1;
+      z-index: 0;                /* behind the sign-off text */
+      pointer-events: none;
       filter: drop-shadow(0 0 14px rgba(230, 90, 160, 0.35)) contrast(1.1) saturate(1.15);
     }
     @media print {
       .sign-off-stamp { filter: none !important; }   /* plain ink on paper */
     }
 
+    /* Page margins adjusted so the left-side stamp and every item fit properly
+       when saving/printing to PDF (no clipping, nothing spills off the page). */
+    @page { margin: 16mm 18mm; }
+    .log-container { margin-left: auto; margin-right: auto; overflow: visible; }
+
     @media (max-width: 550px) {
       /* ENLARGED: bigger Soulmate logo on phones */
       .brand-logo { width: 190px; height: 190px; margin-bottom: 10px; }
       .love-stamp { width: 210px; height: 94px; }
-      .sign-off-stamp { width: 210px; height: 94px; }  /* normal phone size, same as .love-stamp */
+      .sign-off-stamp { width: 210px; height: 94px; left: -40%; }  /* scaled for narrow screens */
       .password-box .brand-logo { width: 160px; height: 160px; }
     }
 
