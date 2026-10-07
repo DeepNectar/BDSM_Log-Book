@@ -845,18 +845,70 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
     // inlined <style> blocks plus the linked css/style.css rules (flattened to
     // their screen form — the dark app theme is overridden afterwards). Without
     // this the downloaded / captured sheet renders unstyled on phones.
-    function collectExportCss() {
+    // BLACK-PDF-FIX: the app theme is dark (body background #0b0a0c, purple
+    // glass panels, light text). The exported print/PDF sheet overrides it
+    // with white-paper styles that live in css/style.css and in inline
+    // <style> blocks. If ANY of those sheets cannot be read here — a
+    // cross-origin stylesheet (CDN-hosted css on some deployments), or an
+    // opaque CSSImportRule inside it (Font Awesome's @import) throws
+    // SecurityError when we touch `.cssRules` — the copied CSS silently
+    // loses the white overrides while the dark theme stays, and html2canvas
+    // paints the whole PDF page black on phones. So:
+    //   1. fetch our own css/style.css as plain text (guaranteed same-origin
+    //      readable copy even if the browser refuses to expose its rules);
+    //   2. walk cssRules defensively per-rule so one unreadable rule can
+    //      never abort the whole collection;
+    //   3. always append PAPER_OVERRIDES_CSS after everything else (the
+    //      buildPrintDocumentHTML() template already does this).
+    async function fetchOwnLinkedCssText() {
+      let out = '';
+      const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+      await Promise.all(links.map(async (l) => {
+        try {
+          const href = l.href || '';
+          if (!href) return;
+          // Only our own stylesheets — never embed third-party CSS like
+          // Font Awesome from the CDN into the exported document.
+          let sameOrigin = false;
+          try { sameOrigin = new URL(href, location.href).origin === location.origin; }
+          catch (e) { sameOrigin = /^css\/|^\.?\//.test(l.getAttribute('href') || ''); }
+          if (!sameOrigin) return;
+          if (/font-?awesome/i.test(href)) return;
+          const res = await fetch(href, { credentials: 'same-origin' });
+          if (res && res.ok) out += '\n' + (await res.text());
+        } catch (e) { /* offline / blocked — the JS overrides still save us */ }
+      }));
+      return out;
+    }
+
+    function collectExportCssSync() {
       const styleText = Array.from(document.querySelectorAll('style'))
         .map(s => s.textContent).join('\n');
       let linkedCss = '';
       try {
         document.querySelectorAll('link[rel="stylesheet"]').forEach(l => {
-          try {
-            Array.from(l.sheet.cssRules).forEach(r => { linkedCss += r.cssText + '\n'; });
-          } catch (e) { /* cross-origin sheet (e.g. Font Awesome CDN) — skip */ }
+          let rules = null;
+          try { rules = l.sheet && l.sheet.cssRules; } catch (e) { rules = null; }
+          if (!rules) return;   // cross-origin sheet — handled by the fetch path
+          for (let i = 0; i < rules.length; i++) {
+            // Defensive per-rule read: an opaque CSSImportRule (Font Awesome)
+            // must not throw and kill every following rule.
+            try { linkedCss += rules[i].cssText + '\n'; } catch (e) { /* skip */ }
+          }
         });
       } catch (e) { /* ignore */ }
       return linkedCss + '\n' + styleText;
+    }
+
+    async function collectExportCss() {
+      let base = collectExportCssSync();
+      // Guarantee our own paper/print CSS is present even when the browser
+      // refused to expose link.sheet.cssRules (cross-origin deployment).
+      try {
+        const own = await fetchOwnLinkedCssText();
+        if (own && base.indexOf('#0b0a0c') !== -1) base += '\n' + own;
+      } catch (e) { /* ignore */ }
+      return base;
     }
 
     // White-paper overrides applied on top of the app CSS for both outputs.
@@ -870,6 +922,15 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
     // a <style> tag AFTER the copied app CSS, they win on specificity ties —
     // identical, readable output on phone and laptop.
     const PRINT_SHEET_CSS = [
+      // BLACK-PDF-FIX (phones): the phone PDF preview came out completely
+      // BLACK because html2canvas rasterised the sheet while the dark app
+      // theme was still in charge — either the copied app CSS lost its white
+      // overrides (unreadable stylesheet) or a late `body{background:#0b0a0c}`
+      // beat our earlier rules. These two lines are the absolute last rules
+      // of this block (appended AFTER every copied stylesheet), so they win
+      // over the entire dark theme no matter what: guaranteed white paper.
+      '@media print{html,body{background:#ffffff!important;background-image:none!important;color:#222!important;}}',
+      'html.print-preview,body.print-preview,#mainApp,.log-container{background:#ffffff!important;background-color:#ffffff!important;background-image:none!important;color:#222!important;}',
       // ---- page frame -------------------------------------------------
       '@page{margin:14mm 12mm;}',
       'html,body{background:#ffffff!important;background-image:none!important;height:auto!important;overflow:visible!important;min-height:0!important;margin:0!important;padding:0!important;max-width:100%!important;}',
@@ -943,7 +1004,12 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
     // Produces the complete standalone HTML document string of the whole log
     // book (all tabs, same content/order as the PDF). It is ONLY placed into
     // the copy box — no preview rendering, no download needed.
-    function buildPrintDocumentHTML() {
+    // BLACK-PDF-FIX: now async because it awaits collectExportCss(), which
+    // fetches our own css/style.css as plain text when the browser refuses to
+    // expose its rules (cross-origin CSS). Without a readable copy of the app
+    // CSS the dark body background (#0b0a0c) survived into the captured sheet
+    // and html2canvas painted every PDF page black on phones.
+    async function buildPrintDocumentHTML() {
       const clone = buildCleanDocumentClone();
       // On phones the Drive-hosted signs/stamp often fail to load while the
       // print sheet renders (slow network / blocked host) — that is why the
@@ -957,17 +1023,18 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
           if (d) img.setAttribute('src', d);
         });
       } catch (e) { /* never break export over a picture */ }
+      const exportCss = await collectExportCss();
       return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
         '<meta name="viewport" content="width=device-width, initial-scale=1">' +
-        '<title>Log Book \u2014 Print</title><style>' + collectExportCss() + '\n' +
+        '<title>Log Book \u2014 Print</title><style>' + exportCss + '\n' +
         PAPER_OVERRIDES_CSS +
         '</style></head><body class="print-preview">' + clone.innerHTML + '</body></html>';
     }
 
     // Show the generated HTML code in the modal purely for copying.
-    function generateHtmlCode() {
+    async function generateHtmlCode() {
       try {
-        const html = buildPrintDocumentHTML();
+        const html = await buildPrintDocumentHTML();
         const ta = document.getElementById('emailHTMLOutput');
         if (ta) ta.value = html;
         document.getElementById('emailModal').classList.add('active');
@@ -978,9 +1045,9 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
       }
     }
 
-    function downloadPrintHTML() {
+    async function downloadPrintHTML() {
       try {
-        const html = buildPrintDocumentHTML();
+        const html = await buildPrintDocumentHTML();
         const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -997,9 +1064,9 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
 
     // Fallback path: print through an offscreen iframe (some Android WebViews
     // allow this even when top-level window.print() is blocked).
-    function printViaIframe() {
+    async function printViaIframe() {
       try {
-        const html = buildPrintDocumentHTML();
+        const html = await buildPrintDocumentHTML();
         const frame = document.createElement('iframe');
         frame.style.position = 'fixed';
         frame.style.right = '0';
@@ -1150,9 +1217,31 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
     // get on the laptop.
     const PDF_SHEET_WIDTH_PX = 794;   // ≈ A4 @ 96dpi
 
+    // BLACK-PDF-FIX (last line of defence): inject the white-paper rules as a
+    // REAL <style> element at the very END of <head> inside the capture frame.
+    // html2canvas reads every style tag in document order, so these !important
+    // rules beat ALL copied app CSS (even if some dark `body{background:#0b0a0c}`
+    // rule somehow slipped in after ours) — the captured sheet can never come
+    // out black on phones again.
+    function forceWhitePaperInFrame(docEl) {
+      try {
+        const st = docEl.ownerDocument
+          ? docEl.ownerDocument.createElement('style')
+          : document.createElement('style');
+        st.textContent = [
+          'html,body{background:#ffffff!important;background-color:#ffffff!important;background-image:none!important;color:#222!important;}',
+          '#mainApp,.log-container,.tab-panel,.table-wrap,th,td,tr,table,.footer,.footer-note,.signoff-section,.stamp-overlay{background:#ffffff!important;background-color:#ffffff!important;background-image:none!important;}',
+          '.bg-effect,.glow-layer,.mist-container,.hearts-container,.sparkle,.heart-particle,.mist-particle{display:none!important;}'
+        ].join('\n');
+        (docEl.querySelector('head') || docEl.body || docEl).appendChild(st);
+      } catch (e) { /* never fail the export over this belt-and-braces rule */ }
+    }
+
     function buildPdfSheetElement() {
-      return new Promise((resolve, reject) => {
-        const html = buildPrintDocumentHTML();
+      // BLACK-PDF-FIX: buildPrintDocumentHTML() is async now (it fetches our
+      // own stylesheet text before composing the sheet), so resolve the
+      // promise chain instead of reading a Promise object as if it were HTML.
+      return buildPrintDocumentHTML().then(html => new Promise((resolve, reject) => {
         const holder = document.createElement('div');
         holder.setAttribute('aria-hidden', 'true');
         // BLANK-PDF-FIX (phones): the holder used to sit at left:-100000px.
@@ -1191,6 +1280,8 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
             holder.style.height = (h || 1200) + 'px';
             frame.style.height = (h || 1200) + 'px';
             void holder.offsetHeight;
+            // BLACK-PDF-FIX: guarantee white paper inside the capture frame.
+            if (doc.documentElement) forceWhitePaperInFrame(doc.documentElement);
           } catch (e) { /* fall through with whatever we have */ }
           ok ? resolve({ holder, frame }) : reject(new Error('iframe render failed'));
         };
@@ -1212,7 +1303,7 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
           holder.remove();
           reject(e);
         }
-      });
+      }));
     }
 
     let pdfBusy = false;
