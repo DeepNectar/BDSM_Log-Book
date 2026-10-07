@@ -1363,14 +1363,14 @@
     }
     .sig-img {
       display: block;
-      min-height: 120px;         /* ENLARGED sign image size (was 56px / 96px) —
-                                   also guarantees the ink stays big in the PDF
-                                   even if the hosted file reports a tiny size */
-      max-height: 150px;         /* ENLARGED sign image size */
+      min-height: 56px;          /* COMPACT sign size — the enlarged 120/150px
+                                    version made Deep's & Honey's signatures
+                                    dominate the sign-off block */
+      max-height: 72px;          /* COMPACT sign size */
       height: auto;
       width: auto;
-      max-width: 420px;          /* ENLARGED sign image size (was 220px / 380px) */
-      margin: 0 auto -12px auto; /* ink overlaps the dotted line from above */
+      max-width: 220px;          /* COMPACT sign size */
+      margin: 0 auto -8px auto;  /* ink overlaps the dotted line from above */
       background: transparent;
       pointer-events: none;
     }
@@ -1384,13 +1384,12 @@
       white-space: nowrap;
     }
     @media print {
-      /* ENLARGED in the PDF / printed sheet too (was 84px max-height) — the
-         signatures were barely visible on paper. min-height guarantees the ink
-         stays big even if the hosted image reports a small intrinsic size. */
+      /* COMPACT in the PDF / printed sheet too — same tidy size as the screen
+         version so the signatures no longer look oversized on paper. */
       .sig-img {
-        min-height: 120px !important;
-        max-height: 150px !important;
-        max-width: 420px !important;
+        min-height: 56px !important;
+        max-height: 72px !important;
+        max-width: 220px !important;
       }
       .sig-label, .sig-line, .sig-date { color: #333 !important; }
     }
