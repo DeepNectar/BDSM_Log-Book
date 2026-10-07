@@ -1328,12 +1328,10 @@
     .sig-label {
       color: #b0a0b8;
       display: inline-block;
-      margin-bottom: 10px;       /* brought "Deep's/Honey's Signature:" a bit DOWN */
+      margin-bottom: 2px;
     }
     .sig-img {
       display: block;
-      position: relative;
-      z-index: 0;                /* the sign image now sits BEHIND the text */
       min-height: 120px;         /* ENLARGED sign image size (was 56px / 96px) —
                                    also guarantees the ink stays big in the PDF
                                    even if the hosted file reports a tiny size */
@@ -1341,21 +1339,12 @@
       height: auto;
       width: auto;
       max-width: 420px;          /* ENLARGED sign image size (was 220px / 380px) */
-      margin: 0 auto;            /* no overlap onto the line from the image side;
-                                    the line + Date row overlaps upward instead
-                                    (see .sig-foot below) so text draws ON TOP
-                                    of the signature ink */
+      margin: 0 auto -12px auto; /* ink overlaps the dotted line from above */
       background: transparent;
       pointer-events: none;
     }
-    .sig-foot {
-      display: block;
-      position: relative;
-      z-index: 1;                /* "____ Date:" text renders ABOVE the image */
-      margin-top: -26px;         /* brings the line + Date a little UP so they
-                                    overlap the bottom of the signature ink */
-    }
     .sig-line {
+      display: block;
       color: #999;
       letter-spacing: 1px;
     }
@@ -1372,7 +1361,5 @@
         max-height: 150px !important;
         max-width: 420px !important;
       }
-      .sig-label { margin-bottom: 10px !important; }   /* label a bit down */
-      .sig-foot  { margin-top: -26px !important; }     /* line + Date up, over the ink */
       .sig-label, .sig-line, .sig-date { color: #333 !important; }
     }
