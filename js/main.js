@@ -780,6 +780,13 @@
         'td input,td select,td textarea,.pv-val{color:#1a1a1a!important;-webkit-text-fill-color:#1a1a1a!important;' +
         'background-color:transparent!important;text-shadow:none!important}' +
         '.sign-off-stamp{filter:none!important}' +
+        /* ENLARGED sign images so they are clearly visible in the PDF / print:
+           both signature images get a big guaranteed height (min-height keeps
+           them large even if the hosted image reports a tiny intrinsic size). */
+        '@media print{.sig-img{min-height:120px!important;max-height:150px!important;' +
+        'max-width:420px!important;height:auto!important;width:auto!important}}' +
+        '.sig-img{min-height:120px!important;max-height:150px!important;' +
+        'max-width:420px!important;height:auto!important;width:auto!important}' +
         '</style></head><body class="print-preview">' + clone.innerHTML + '</body></html>';
     }
 
@@ -1212,7 +1219,7 @@
   .footer { text-align: center; margin-top: 30px; color: #888; font-size: 13px; border-top: 1px solid #e0d0e8; padding-top: 20px; }
   .signature { display: flex; justify-content: space-around; margin-top: 20px; flex-wrap: wrap; }
   .signature div { min-width: 200px; text-align: left; }
-  .signature img.sig { display: block; max-height: 56px; width: auto; margin: 2px 0 -10px 2px; }
+  .signature img.sig { display: block; min-height: 120px; max-height: 150px; width: auto; max-width: 420px; margin: 2px 0 -12px 2px; }  /* ENLARGED sign images (was 56px) so they are visible in the PDF */
   .subject-line { background: #f0e6f5; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; color: #4a2a5a; border-left: 4px solid #7a4a8a; }
   .subject-line strong { color: #5a2a6a; }
 </style>
