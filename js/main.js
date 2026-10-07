@@ -780,19 +780,13 @@
         'td input,td select,td textarea,.pv-val{color:#1a1a1a!important;-webkit-text-fill-color:#1a1a1a!important;' +
         'background-color:transparent!important;text-shadow:none!important}' +
         '.sign-off-stamp{filter:none!important}' +
-        /* ENLARGED sign images so they are clearly visible in the PDF / print.
-           LAYERING: the sign image sits BEHIND the text — "Deep's/Honey's
-           Signature:" label is nudged down a bit, and the underline + Date row
-           (.sig-foot) is pulled up so it overlaps ON TOP of the signature ink. */
-        '.sig-img{position:relative;z-index:0;min-height:120px!important;max-height:150px!important;' +
-        'max-width:420px!important;height:auto!important;width:auto!important;margin:0 auto!important}' +
-        '.sig-label{margin-bottom:10px!important}' +
-        '.sig-foot{display:block!important;position:relative!important;z-index:1!important;' +
-        'margin-top:-26px!important}' +
+        /* ENLARGED sign images so they are clearly visible in the PDF / print:
+           both signature images get a big guaranteed height (min-height keeps
+           them large even if the hosted image reports a tiny intrinsic size). */
         '@media print{.sig-img{min-height:120px!important;max-height:150px!important;' +
-        'max-width:420px!important;height:auto!important;width:auto!important;margin:0 auto!important}' +
-        '.sig-label{margin-bottom:10px!important}' +
-        '.sig-foot{margin-top:-26px!important}}' +
+        'max-width:420px!important;height:auto!important;width:auto!important}}' +
+        '.sig-img{min-height:120px!important;max-height:150px!important;' +
+        'max-width:420px!important;height:auto!important;width:auto!important}' +
         '</style></head><body class="print-preview">' + clone.innerHTML + '</body></html>';
     }
 
@@ -1224,10 +1218,8 @@
   td { padding: 8px 12px; border-bottom: 1px solid #eee; color: #222; }
   .footer { text-align: center; margin-top: 30px; color: #888; font-size: 13px; border-top: 1px solid #e0d0e8; padding-top: 20px; }
   .signature { display: flex; justify-content: space-around; margin-top: 20px; flex-wrap: wrap; }
-  .signature div { min-width: 200px; text-align: left; position: relative; }
-  .signature strong { display: inline-block; margin-bottom: 10px; }  /* label a bit DOWN */
-  .signature img.sig { display: block; position: relative; z-index: 0; min-height: 120px; max-height: 150px; width: auto; max-width: 420px; margin: 0 0 0 2px; }  /* ENLARGED sign images (was 56px) — image sits BEHIND the text */
-  .signature .sig-foot { display: block; position: relative; z-index: 1; margin-top: -26px; }  /* line + Date pulled UP so they overlap ON TOP of the signature ink */
+  .signature div { min-width: 200px; text-align: left; }
+  .signature img.sig { display: block; min-height: 120px; max-height: 150px; width: auto; max-width: 420px; margin: 2px 0 -12px 2px; }  /* ENLARGED sign images (was 56px) so they are visible in the PDF */
   .subject-line { background: #f0e6f5; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; color: #4a2a5a; border-left: 4px solid #7a4a8a; }
   .subject-line strong { color: #5a2a6a; }
 </style>
@@ -1265,8 +1257,8 @@
     <h2>✍️ Sign‑off</h2>
     <img src="https://lh3.googleusercontent.com/d/1xT4SnUR8dtEHP14MUMFZnYZnumAS96Fw" alt="Love Stamp" style="display:block; margin:0 auto 12px auto; width:80px; height:80px; object-fit:contain;">
     <div class="signature">
-      <div><strong>${deep}'s Signature:</strong><img class="sig" src="https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq32eCW-ZxMasj" alt="${deep}'s Signature"><span class="sig-foot"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</span></div>
-      <div><strong>${honey}'s Signature:</strong><img class="sig" src="https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI" alt="${honey}'s Signature"><span class="sig-foot"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</span></div>
+      <div><strong>${deep}'s Signature:</strong><img class="sig" src="https://lh3.googleusercontent.com/d/1KnoE8uWAwugB0PRMiPmq32eCW-ZxMasj" alt="${deep}'s Signature"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</div>
+      <div><strong>${honey}'s Signature:</strong><img class="sig" src="https://lh3.googleusercontent.com/d/1HRoqjVvSDswlROnookv0ykGagHwLQ6FI" alt="${honey}'s Signature"><span style="color:#999;">_________________</span>&nbsp;&nbsp;Date: ________</div>
     </div>
   </div>
 
