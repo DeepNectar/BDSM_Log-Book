@@ -810,9 +810,11 @@
       };
     }
 
-    // Build a fully self-contained printable HTML document (inlined styles,
-    // white paper look, input values replaced with readable text spans).
-    function buildPrintDocumentHTML() {
+    // Build a clean DOCUMENT clone of the whole log book: every tab panel
+    // visible, buttons/nav/overlays stripped, input & select values frozen as
+    // plain readable text. Shared by BOTH generators below so the HTML code
+    // and the PDF can never drift apart.
+    function buildCleanDocumentClone() {
       const clone = document.body.cloneNode(true);
       ['#passwordOverlay', '.email-modal', '#toast', '#syncBadgeWrap',
        '.bg-effect', '.mist-container', '.hearts-container', '.tab-nav',
@@ -826,19 +828,25 @@
       clone.querySelectorAll('.tab-panel').forEach(p => p.classList.add('active'));
 
       clone.querySelectorAll('input, select, textarea').forEach(el => {
-        const val = el.value || '';
+        let val = el.value || '';
+        if (el.tagName === 'SELECT' && el.selectedIndex >= 0 && !val) {
+          val = el.options[el.selectedIndex].textContent.trim();
+        }
         const span = document.createElement('span');
         span.className = 'pv-val';
         span.textContent = val;
         el.replaceWith(span);
       });
+      return clone;
+    }
 
+    // Collect all CSS that should travel with the exported document: the
+    // inlined <style> blocks plus the linked css/style.css rules (flattened to
+    // their screen form — the dark app theme is overridden afterwards). Without
+    // this the downloaded / captured sheet renders unstyled on phones.
+    function collectExportCss() {
       const styleText = Array.from(document.querySelectorAll('style'))
         .map(s => s.textContent).join('\n');
-
-      // Also inline the linked css/style.css — without it the downloaded /
-      // printed sheet renders unstyled (this was another reason phones showed
-      // a blank "preview" for the saved file).
       let linkedCss = '';
       try {
         document.querySelectorAll('link[rel="stylesheet"]').forEach(l => {
@@ -847,85 +855,41 @@
           } catch (e) { /* cross-origin sheet (e.g. Font Awesome CDN) — skip */ }
         });
       } catch (e) { /* ignore */ }
+      return linkedCss + '\n' + styleText;
+    }
 
+    // White-paper overrides applied on top of the app CSS for both outputs.
+    const PAPER_OVERRIDES_CSS =
+      '@media print{html,body{background:#fff!important}.log-container{background:#fff!important;color:#222!important;text-shadow:none!important}}' +
+      'html,body{background:#fff!important;margin:0;padding:0}' +
+      '.log-container{background:#fff!important;color:#222!important;text-shadow:none!important;max-width:100%!important;border:none!important;box-shadow:none!important}' +
+      '.pv-val{border-bottom:1px solid #bbb;display:inline-block;min-width:60px}';
+
+    // ===== HTML GENERATION (code only — for copying) =====
+    // Produces the complete standalone HTML document string of the whole log
+    // book (all tabs, same content/order as the PDF). It is ONLY placed into
+    // the copy box — no preview rendering, no download needed.
+    function buildPrintDocumentHTML() {
+      const clone = buildCleanDocumentClone();
       return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
         '<meta name="viewport" content="width=device-width, initial-scale=1">' +
-        '<title>Log Book \u2014 Print</title><style>' + linkedCss + '\n' + styleText + '\n' +
-        '@media print{html,body{background:#fff!important}.log-container{background:#fff!important;color:#222!important;text-shadow:none!important}}' +
-        'html,body{background:#fff!important;margin:0;padding:0}' +
-        '.log-container{background:#fff!important;color:#222!important;text-shadow:none!important;max-width:100%!important;border:none!important;box-shadow:none!important}' +
-        '.pv-val{border-bottom:1px solid #bbb;display:inline-block;min-width:60px}' +
-        /* PDF/printed sheet corrections: the app's 93%-transparent dark theme
-           made the saved PDF look washed-out / very light. Force solid white
-           paper, fully opaque elements and dark ink so colors print proper. */
-        '*{opacity:1!important;animation:none!important}' +
-        'body.print-preview .bg-effect,body.print-preview .glow-layer,' +
-        'body.print-preview .mist-container,body.print-preview .hearts-container,' +
-        'body.print-preview .sparkle,body.print-preview .mist-particle,' +
-        'body.print-preview .heart-particle{display:none!important}' +
-        '.log-container,.table-wrap{background:#ffffff!important;' +
-        'backdrop-filter:none!important;-webkit-backdrop-filter:none!important;' +
-        'box-shadow:none!important;border-color:#ccc!important;text-shadow:none!important;' +
-        'color:#1a1a1a!important}' +
-        'h1,h2,h3,h4,h5,h6,p,span,div,label,small,strong,em,i,b,u,li,ul,ol,th,td,caption' +
-        '{-webkit-text-fill-color:#1a1a1a!important;color:#1a1a1a!important;text-shadow:none!important}' +
-        '.tab-panel h3,.tab-panel h4,.stamp-caption,.sig-label,.sig-line,.sig-date,' +
-        '.sign-off-overlay div,.sign-off-overlay span{font-weight:600!important}' +
-        '.log-header h1{color:#5a2d6a!important;-webkit-text-fill-color:#5a2d6a!important;' +
-        'background:none!important;-webkit-background-clip:unset!important;background-clip:unset!important}' +
-        '.log-header .sub{color:#444!important;-webkit-text-fill-color:#444!important}' +
-        'th{background:#e8e0f0!important;color:#1a1a1a!important;-webkit-text-fill-color:#1a1a1a!important}' +
-        'td input,td select,td textarea,.pv-val{color:#1a1a1a!important;-webkit-text-fill-color:#1a1a1a!important;' +
-        'background-color:transparent!important;text-shadow:none!important}' +
-        '.sign-off-stamp{filter:none!important}' +
-        /* ENLARGED love stamp (footer stamp + sign-off watermark) and moved
-           slightly to the RIGHT — same values as the screen CSS so the
-           PDF/print matches the app. */
-        '@media print{.love-stamp{width:400px!important;height:179px!important;' +
-        'position:relative!important;left:28px!important}' +
-        '.sign-off-stamp{width:400px!important;height:179px!important;' +
-        'left:calc(79% + 28px)!important}}' +
-        '.love-stamp{width:400px!important;height:179px!important;' +
-        'position:relative!important;left:28px!important}' +
-        '.sign-off-stamp{width:400px!important;height:179px!important;' +
-        'left:calc(79% + 28px)!important}' +
-        /* ENLARGED sign images so they are clearly visible in the PDF / print:
-           both signature images get a big guaranteed height (min-height keeps
-           them large even if the hosted image reports a tiny intrinsic size). */
-        '@media print{.sig-img{min-height:120px!important;max-height:150px!important;' +
-        'max-width:420px!important;height:auto!important;width:auto!important}}' +
-        '.sig-img{min-height:120px!important;max-height:150px!important;' +
-        'max-width:420px!important;height:auto!important;width:auto!important}' +
-        /* SIGN-OFF SECTION: make the emailed HTML report look EXACTLY like the
-           PDF — enlarged 400x179 love stamp watermark behind the text, nudged
-           right, soft ink (no glow), and the same enlarged signatures with the
-           dotted line + Date overlapping the ink. */
-        '.sign-off-overlay,.signoff-section{position:relative!important;text-align:center!important;' +
-        'margin-top:30px!important;border-top:2px solid #e8d5f0!important;padding-top:20px!important;' +
-        'overflow:hidden!important}' +
-        /* NOTE: only .sign-off-stamp (the PDF/app watermark class) is positioned
-           absolutely behind the text. The email report's stamp uses the extra
-           class "stamp-watermark" with INLINE styles, because many email clients
-           strip <style> blocks — inline keeps it looking right inside the mail. */
-        '.sign-off-stamp{display:block!important;position:absolute!important;' +
-        'left:calc(79% + 28px)!important;top:50%!important;transform:translate(-50%,-50%) rotate(-4deg)!important;' +
-        'width:400px!important;height:179px!important;object-fit:contain!important;opacity:0.35!important;' +
-        'z-index:0!important;pointer-events:none!important;margin:0!important;border:none!important;' +
-        'filter:none!important;background:none!important;box-shadow:none!important}' +
-        '.sign-off-overlay h4,.signoff-section h2,.signature-heading{position:relative!important;z-index:1!important}' +
-        '.sign-off-overlay > div,.signature{position:relative!important;z-index:1!important;' +
-        'display:flex!important;justify-content:space-around!important;flex-wrap:wrap!important;' +
-        'gap:30px!important;margin-top:10px!important}' +
-        '.sig-block,.signature > div{min-width:200px!important;text-align:left!important}' +
-        '.sig-label,.signature strong{display:inline-block!important;color:#333!important;font-weight:600!important}' +
-        '.sig-img,.signature img.sig{display:block!important;min-height:120px!important;max-height:150px!important;' +
-        'height:auto!important;width:auto!important;max-width:420px!important;margin:2px 0 -12px 2px!important;' +
-        'background:transparent!important}' +
-        '.sig-line,.signature span[style*="#999"]{display:inline!important;color:#999!important;letter-spacing:1px!important}' +
-        '.sig-date{color:#999!important;white-space:nowrap!important}' +
-        '@media print{.sign-off-stamp,.stamp-watermark{width:400px!important;height:179px!important;max-width:400px!important;' +
-        'left:calc(79% + 28px)!important;opacity:0.35!important;filter:none!important}}' +
+        '<title>Log Book \u2014 Print</title><style>' + collectExportCss() + '\n' +
+        PAPER_OVERRIDES_CSS +
         '</style></head><body class="print-preview">' + clone.innerHTML + '</body></html>';
+    }
+
+    // Show the generated HTML code in the modal purely for copying.
+    function generateHtmlCode() {
+      try {
+        const html = buildPrintDocumentHTML();
+        const ta = document.getElementById('emailHTMLOutput');
+        if (ta) ta.value = html;
+        document.getElementById('emailModal').classList.add('active');
+        showToast('📋 HTML code generated! Tap "Copy HTML" to copy it.');
+      } catch (e) {
+        console.error('generateHtmlCode failed:', e);
+        showToast('⚠️ Could not generate the HTML code: ' + e.message);
+      }
     }
 
     function downloadPrintHTML() {
@@ -1080,7 +1044,7 @@
     // Wait until every logo / stamp / signature image is fully decoded so the
     // captured PDF never misses them (Google-Drive images load slowly).
     async function waitForImages(root) {
-      const imgs = Array.from(root.querySelectorAll('img'));
+      const imgs = Array.from((root.body || root).querySelectorAll('img'));
       await Promise.all(imgs.map(img => {
         if (img.complete && img.naturalWidth > 0) return Promise.resolve();
         return new Promise(resolve => {
@@ -1092,20 +1056,67 @@
       }));
     }
 
-    // Build a clean, WHITE paper sheet off-screen (same content as the print
-    // doc) so the PDF looks like a document — not the dark app theme.
+    // Build the SAME standalone document (identical HTML string to the one the
+    // "Generate HTML Code" button produces) inside an off-screen sandboxed
+    // iframe, at fixed A4 width. Because both the HTML copy and the PDF come
+    // from the exact same buildPrintDocumentHTML() output rendered by the same
+    // engine, the PDF you get on the phone is pixel-for-pixel the same PDF you
+    // get on the laptop.
+    const PDF_SHEET_WIDTH_PX = 794;   // ≈ A4 @ 96dpi
+
     function buildPdfSheetElement() {
-      const html = buildPrintDocumentHTML();
-      const holder = document.createElement('div');
-      holder.setAttribute('aria-hidden', 'true');
-      holder.style.cssText =
-        'position:fixed;left:-10000px;top:0;width:794px;background:#ffffff;' +
-        'color:#222;z-index:-1;overflow:visible;';
-      holder.innerHTML = html;
-      document.body.appendChild(holder);
-      // force layout so html2canvas captures full height
-      void holder.offsetHeight;
-      return holder;
+      return new Promise((resolve, reject) => {
+        const html = buildPrintDocumentHTML();
+        const holder = document.createElement('div');
+        holder.setAttribute('aria-hidden', 'true');
+        holder.style.cssText =
+          'position:fixed;left:-100000px;top:0;width:' + PDF_SHEET_WIDTH_PX + 'px;' +
+          'height:1200px;background:#ffffff;color:#222;z-index:-1;overflow:visible;';
+
+        const frame = document.createElement('iframe');
+        frame.setAttribute('sandbox', 'allow-same-origin');
+        frame.style.cssText = 'width:100%;height:100%;border:0;background:#fff;display:block;';
+        holder.appendChild(frame);
+        document.body.appendChild(holder);
+
+        let settled = false;
+        const finish = (ok) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(guard);
+          try {
+            const doc = frame.contentWindow && frame.contentWindow.document;
+            if (!doc) throw new Error('no iframe document');
+            // Force full layout so html2canvas captures the entire height.
+            const h = Math.max(
+              doc.body ? doc.body.scrollHeight : 0,
+              doc.documentElement ? doc.documentElement.scrollHeight : 0
+            );
+            holder.style.height = (h || 1200) + 'px';
+            frame.style.height = (h || 1200) + 'px';
+            void holder.offsetHeight;
+          } catch (e) { /* fall through with whatever we have */ }
+          ok ? resolve({ holder, frame }) : reject(new Error('iframe render failed'));
+        };
+        const guard = setTimeout(() => finish(true), 6000);  // never hang forever
+
+        frame.onload = () => {
+          // Give Drive-hosted images a moment; waitForImages below does the rest.
+          setTimeout(() => finish(true), 300);
+        };
+        frame.onerror = () => finish(false);
+
+        try {
+          const doc = frame.contentWindow.document;
+          doc.open();
+          doc.write(html);
+          doc.close();
+        } catch (e) {
+          clearTimeout(guard);
+          holder.remove();
+          reject(e);
+        }
+      });
     }
 
     let pdfBusy = false;
@@ -1118,32 +1129,36 @@
       }
       pdfBusy = true;
       showToast('📄 Generating PDF… this takes a few seconds');
-      let holder = null;
+      let sheet = null;
       try {
-        holder = buildPdfSheetElement();
-        // Embed the sign/logo/stamp images as base64 data-URLs first, so they
-        // ALWAYS appear in the PDF even offline / when the image host is blocked.
-        try { await embedEmbeddedImages(holder); } catch (e) { console.warn('embed images failed:', e); }
-        await waitForImages(holder);
+        sheet = await buildPdfSheetElement();
+        // Wait for every logo / stamp / signature image INSIDE the iframe too.
+        await waitForImages(document);
+        try {
+          const fdoc = sheet.frame.contentWindow.document;
+          await waitForImages(fdoc);
+        } catch (e) { /* ignore */ }
 
-        const canvas = await window.html2canvas(holder, {
+        const canvas = await window.html2canvas(sheet.holder, {
           scale: 2,                 // crisp text on phones & laptops
           backgroundColor: '#ffffff',
           useCORS: true,            // needed for the Google-hosted logo/signatures
           allowTaint: false,
-          logging: false
+          logging: false,
+          windowWidth: PDF_SHEET_WIDTH_PX,
+          width: PDF_SHEET_WIDTH_PX
         });
 
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         const pageWmm = 210, pageHmm = 297;
         const imgWmm = pageWmm;
-        const imgHmm = canvas.height * (pageWmm / canvas.width);
 
         const tmp = document.createElement('canvas');
         const pxPerMm = canvas.width / pageWmm;
         const sliceHpx = Math.floor(pageHmm * pxPerMm);
         let yPx = 0, pageIdx = 0;
+        lastPdfPageDataUrls = [];   // fresh page images for the preview modal
         while (yPx < canvas.height) {
           const h = Math.min(sliceHpx, canvas.height - yPx);
           tmp.width = canvas.width;
@@ -1151,6 +1166,7 @@
           tmp.getContext('2d').drawImage(canvas, 0, yPx, canvas.width, h,
                                          0, 0, canvas.width, h);
           const dataUrl = tmp.toDataURL('image/jpeg', 0.92);
+          if (pageIdx < 4) lastPdfPageDataUrls.push(dataUrl);  // keep first pages
           if (pageIdx > 0) pdf.addPage();
           pdf.addImage(dataUrl, 'JPEG', 0, 0, imgWmm, h / pxPerMm);
           yPx += h;
@@ -1163,7 +1179,7 @@
         printAllData();
         return null;
       } finally {
-        if (holder) holder.remove();
+        if (sheet && sheet.holder) sheet.holder.remove();
         pdfBusy = false;
       }
     }
@@ -1222,36 +1238,71 @@
       }
     }
 
+    // ===== PDF PREVIEW MODAL — iPhone-safe =====
+    // Why the old preview "didn't work" on iPhone:
+    //   1. The blob-URL <iframe> preview is silently blocked by iOS Safari, so
+    //      users saw a blank box and assumed the whole button was broken.
+    //   2. Anchor downloads of blob: URLs are also unreliable in Safari — the
+    //      file either vanished or opened as an unnamed QuickLook page that
+    //      many users never found the Share button on.
+    // New flow (same on phone & laptop — same blob, same PDF bytes):
+    //   - Show a real image preview built from the rendered pages (works in
+    //     every browser, including iOS).
+    //   - Desktop Chrome/Edge → native "Save as PDF" picker.
+    //   - Other desktop browsers → normal file download.
+    //   - iPhone/iPad → open the PDF in a new tab and show step-by-step
+    //     Share → Save to Files instructions (this is the only reliable way
+    //     iOS can persist a PDF), with Print → Save as PDF as the alternative.
     function openPdfPreviewModal(blob) {
       closePdfPreview();
       const url = URL.createObjectURL(blob);
+      const filename = 'Soulmate-Log-Book.pdf';
+
       const overlay = document.createElement('div');
       overlay.id = 'pdfPreviewOverlay';
       overlay.innerHTML =
         '<div class="pdf-preview-box">' +
           '<h3><i class="fas fa-file-pdf"></i> PDF Ready — Preview</h3>' +
-          '<iframe id="pdfPreviewFrame" src="' + url + '" title="PDF Preview"></iframe>' +
-          '<p class="pf-hint pdf-ios-hint">On iPhone: if the preview stays blank, use ' +
-            '<b>Open in Safari</b>, then tap the <b>Share</b> button → <b>Save to Files</b> ' +
-            '(or → Print → Save as PDF).</p>' +
+          '<div id="pdfPreviewPages" class="pdf-preview-pages">' +
+            '<p class="pf-hint">Loading preview…</p>' +
+          '</div>' +
+          '<p class="pf-hint pdf-ios-hint" id="pdfHintLine"></p>' +
           '<div class="pdf-preview-actions">' +
             '<button class="btn btn-success" id="pdfSaveBtn"><i class="fas fa-save"></i> Save PDF</button>' +
-            '<button class="btn btn-primary" id="pdfOpenBtn"><i class="fas fa-external-link-alt"></i> Open in Safari</button>' +
+            '<button class="btn btn-primary" id="pdfOpenBtn"><i class="fas fa-external-link-alt"></i> Open Full PDF</button>' +
             '<button class="btn btn-danger" id="pdfCloseBtn"><i class="fas fa-times"></i> Close</button>' +
           '</div>' +
         '</div>';
       document.body.appendChild(overlay);
 
-      const filename = 'Soulmate-Log-Book.pdf';
+      const hint = document.getElementById('pdfHintLine');
+      const iOS = isIOSDevice();
+      if (iOS) {
+        hint.innerHTML =
+          '<b>iPhone / iPad:</b> tap <b>Save PDF</b> (or <b>Open Full PDF</b>) → ' +
+          'in the new page tap the <b>Share</b> button <i class="fas fa-share-square"></i> → ' +
+          '<b>Save to Files</b>. Alternative: Share → <b>Print</b> → pinch the preview → <b>Share</b> → Save to Files.';
+      } else {
+        hint.textContent = 'Tap "Save PDF" to store Soulmate-Log-Book.pdf on this device. This is the exact same PDF on phone and laptop.';
+      }
+
+      // Build an IMAGE preview from the same blob — works on iOS where blob
+      // iframes don't. Render each PDF page to a canvas via object URLs.
+      renderPdfImagePreview(blob, url);
+
       document.getElementById('pdfSaveBtn').onclick = async () => {
         let ok = false;
         if (canUseNativePicker()) ok = await nativeSaveBlob(blob, filename);
         if (!ok) {
-          downloadBlobViaAnchor(blob, filename);
-          if (isIOSDevice() && isSafariBrowser()) {
-            showToast('📱 iPhone: tap Share → Save to Files (opened in new tab)');
+          if (iOS) {
+            // On iOS the reliable path is opening the PDF in a new tab where
+            // the system Share sheet (Save to Files / Print→PDF) is available.
+            const w = window.open(url, '_blank');
+            if (!w) { location.href = url; }   // popup blocked → navigate directly
+            showToast('📱 Now tap Share → Save to Files (or Print → Save as PDF)');
           } else {
-            showToast('⬇️ PDF saved — check your Downloads / Files app');
+            downloadBlobViaAnchor(blob, filename);
+            showToast('⬇️ PDF saved — check your Downloads folder');
           }
         }
       };
@@ -1265,6 +1316,42 @@
       };
     }
 
+    // Image-based preview: draw the first few rendered pages of the document
+    // into <img> tags inside the modal. Uses the already-drawn html2canvas
+    // slices when available; falls back to the blob iframe on desktop.
+    let lastPdfPageDataUrls = [];
+    function renderPdfImagePreview(blob, blobUrl) {
+      const box = document.getElementById('pdfPreviewPages');
+      if (!box) return;
+      if (lastPdfPageDataUrls.length) {
+        box.innerHTML = '';
+        lastPdfPageDataUrls.slice(0, 4).forEach((d, i) => {
+          const img = document.createElement('img');
+          img.src = d;
+          img.alt = 'PDF page ' + (i + 1);
+          img.className = 'pdf-page-img';
+          box.appendChild(img);
+        });
+        if (lastPdfPageDataUrls.length > 4) {
+          const more = document.createElement('p');
+          more.className = 'pf-hint';
+          more.textContent = '+' + (lastPdfPageDataUrls.length - 4) + ' more pages — tap "Open Full PDF"';
+          box.appendChild(more);
+        }
+        return;
+      }
+      // No page images captured (shouldn't normally happen) — use iframe on
+      // desktop; iOS users still have the working buttons below.
+      if (!isIOSDevice()) {
+        const frame = document.createElement('iframe');
+        frame.title = 'PDF Preview';
+        frame.src = blobUrl;
+        box.appendChild(frame);
+      } else {
+        box.innerHTML = '<p class="pf-hint">Preview not available on this browser — use the buttons below; they open the exact same PDF.</p>';
+      }
+    }
+
     function closePdfPreview() {
       const old = document.getElementById('pdfPreviewOverlay');
       if (old) old.remove();
@@ -1274,7 +1361,7 @@
       const blob = await generatePdfBlob();
       if (!blob) return;
       openPdfPreviewModal(blob);
-      showToast('✅ PDF ready! Tap "Save PDF" or "Open in Safari".');
+      showToast('✅ PDF ready! Tap "Save PDF".');
     }
 
     // "Save PDF (Preview)" used to be bound here, but it is now a clone of the
@@ -1297,7 +1384,10 @@
       }
     })();
 
-    // ===== GENERATE EMAIL HTML =====
+    // ===== GENERATE HTML CODE (document format — code only, for copying) =====
+    // NOTE: the *document* HTML (identical source of the PDF) is produced by
+    // buildPrintDocumentHTML() / generateHtmlCode() above. This older email
+    // builder is kept as a secondary option ("Email HTML").
     function generateEmailHTML() {
       const deep = document.getElementById('settingDeep')?.value || 'Deep';
       const honey = document.getElementById('settingHoney')?.value || 'Honey';
@@ -1352,9 +1442,10 @@
       const debriefTable = getTableHTML('debriefBody', debriefHeaders);
       const weeklyTable = getTableHTML('weeklyBody', weeklyHeaders);
 
-      // Build email subject
+      // Build email subject (shown in the copy modal header)
       const subject = `BDSM Contract Log Book - ${deep} & ${honey}`;
-      document.getElementById('emailSubjectDisplay').textContent = subject;
+      const subjEl = document.getElementById('emailSubjectDisplay');
+      if (subjEl) subjEl.textContent = 'Email version — Subject: ' + subject;
 
       // Build complete HTML email with subject line included
       // Sign-off date shown in the email — same "Date: DD/MM/YYYY" format as the PDF
@@ -1444,19 +1535,28 @@
 
       document.getElementById('emailHTMLOutput').value = emailHTML;
       document.getElementById('emailModal').classList.add('active');
-      showToast('📧 Email HTML generated!');
+      showToast('📧 Email HTML generated! Tap "Copy HTML" to copy it.');
     }
 
     function copyEmailHTML() {
       const textarea = document.getElementById('emailHTMLOutput');
+      if (!textarea || !textarea.value) {
+        showToast('⚠️ Nothing to copy yet — generate the HTML first');
+        return;
+      }
+      textarea.focus();
       textarea.select();
-      navigator.clipboard.writeText(textarea.value).then(() => {
-        showToast('📋 HTML copied to clipboard!');
-      }).catch(() => {
-        // fallback
-        document.execCommand('copy');
-        showToast('📋 HTML copied!');
-      });
+      // iOS Safari needs select()+execCommand inside the tap gesture.
+      const done = () => showToast('📋 HTML copied to clipboard!');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textarea.value).then(done).catch(() => {
+          try { document.execCommand('copy'); } catch (e) {}
+          done();
+        });
+      } else {
+        try { document.execCommand('copy'); } catch (e) {}
+        done();
+      }
     }
 
     function closeEmailModal() {
@@ -1501,6 +1601,7 @@
     window.printAllData = printAllData;
     window.saveAsPdf = saveAsPdf;   // ⬅️ NEW: real in-browser PDF + preview
     window.emailPDF = emailPDF;
+    window.generateHtmlCode = generateHtmlCode;   // ⬅️ HTML code only (for copying)
     window.generateEmailHTML = generateEmailHTML;
     window.copyEmailHTML = copyEmailHTML;
     window.closeEmailModal = closeEmailModal;

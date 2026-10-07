@@ -225,12 +225,10 @@
     <!-- Global action buttons -->
     <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:25px; padding-top:18px; border-top:1px solid rgba(200,170,220,0.08); justify-content:center;">
       <button class="btn btn-danger" id="printPdfBtn"><i class="fas fa-file-pdf"></i> Print / Save as PDF</button>
-      <!-- "Save PDF (Preview)" and "Generate Email HTML" are now exact clones of
-           "Print / Save as PDF": same look (btn-danger + file-pdf icon) and the
-           same tap handler (see the print-button script below). -->
-      <button class="btn btn-danger" id="printPdfBtn2"><i class="fas fa-file-pdf"></i> Save PDF (Preview)</button>
+      <button class="btn btn-primary" id="savePdfBtn"><i class="fas fa-download"></i> Generate PDF (Preview)</button>
+      <button class="btn btn-success" onclick="generateHtmlCode()"><i class="fas fa-code"></i> Generate HTML Code</button>
       <button class="btn btn-primary" onclick="emailPDF()"><i class="fas fa-envelope"></i> Email PDF</button>
-      <button class="btn btn-danger" id="printPdfBtn3"><i class="fas fa-file-pdf"></i> Generate Email HTML</button>
+      <button class="btn" onclick="generateEmailHTML()"><i class="fas fa-envelope-open-text"></i> Email HTML</button>
       <button class="btn btn-success" onclick="saveAllData()"><i class="fas fa-save"></i> Save All Data</button>
       <button class="btn btn-warning" onclick="clearAllCloudData()"><i class="fas fa-trash-alt"></i> Clear All Cloud Data</button>
     </div>
@@ -241,12 +239,12 @@
     </div>
   </div>
 
-  <!-- Email HTML Modal -->
+  <!-- HTML Code Modal (copy only) -->
   <div class="email-modal" id="emailModal">
     <div class="email-modal-content">
-      <h3><i class="fas fa-envelope"></i> Email HTML — Copy & Paste</h3>
+      <h3><i class="fas fa-code"></i> HTML Code — Copy Only</h3>
       <p style="color:#b8a0c8; font-size:0.85rem; margin-bottom:8px;">
-        Subject: <span id="emailSubjectDisplay" style="color:#d4b0d8; font-weight:500;"></span>
+        <span id="emailSubjectDisplay" style="color:#d4b0d8; font-weight:500;">Complete standalone document — same content as the PDF. Tap "Copy HTML" to copy the code.</span>
       </p>
       <textarea id="emailHTMLOutput" readonly></textarea>
       <div class="email-modal-actions">
