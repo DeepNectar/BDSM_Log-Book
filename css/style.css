@@ -607,6 +607,12 @@
         filter: none !important;
         animation: none !important;
       }
+      /* SMALLER love stamp in the sign-off area of the printed sheet / PDF
+         (was 400x179). Keeps the native 1536x1024 aspect ratio. */
+      .sign-off-stamp {
+        width: 260px !important;
+        height: 116px !important;
+      }
     }
 
     /* Print styles */
@@ -647,6 +653,120 @@
        now falls back to printing through an iframe / downloadable file, but if
        the dialog does open we also mirror the print sheet in-screen while
        `.print-preview` is active so nothing looks broken mid-preview. */
+    /* BLANK-PDF-FIX (phones): the exported document (Print sheet, downloaded
+       HTML and the html2canvas PDF iframe) always renders with
+       <body class="print-preview">. Previously this class only un-hid the tab
+       panels — the rest of the sheet still wore the dark glass app theme, and
+       several phone browsers never applied the @media print rules at all, so
+       the captured PDF came out blank / dark-on-dark. Now .print-preview ITSELF
+       forces the white-paper look (identical to the @media print rules above),
+       on every device, whether or not print media is active. */
+    body.print-preview {
+      background: #ffffff !important;
+      padding: 0 !important;
+      align-items: flex-start !important;
+      height: auto !important;
+      overflow: visible !important;
+    }
+    body.print-preview .bg-effect,
+    body.print-preview .glow-layer,
+    body.print-preview .mist-container,
+    body.print-preview .hearts-container,
+    body.print-preview .sparkle,
+    body.print-preview .heart-particle,
+    body.print-preview .mist-particle,
+    body.print-preview #passwordOverlay,
+    body.print-preview .toast,
+    body.print-preview .tab-nav,
+    body.print-preview .btn,
+    body.print-preview .btn-group,
+    body.print-preview #syncBadgeWrap,
+    body.print-preview .email-modal {
+      display: none !important;
+    }
+    body.print-preview .log-container {
+      display: block !important;
+      background: #ffffff !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      text-shadow: none !important;
+      box-shadow: none !important;
+      border: none !important;
+      border-radius: 0 !important;
+      padding: 10px 6px !important;
+      max-width: 100% !important;
+      color: #222 !important;
+      animation: none !important;
+    }
+    body.print-preview .log-header h1 {
+      color: #6a3f7a !important;
+      background: none !important;
+      -webkit-background-clip: unset !important;
+      background-clip: unset !important;
+      text-shadow: none !important;
+    }
+    body.print-preview .log-header .sub { color: #555 !important; }
+    body.print-preview .table-wrap {
+      background: #ffffff !important;
+      border: 1px solid #bbb !important;
+      border-radius: 6px !important;
+      overflow: visible !important;
+    }
+    body.print-preview table { min-width: 0 !important; font-size: 11px !important; }
+    body.print-preview th {
+      background: #e8e0f0 !important;
+      color: #222 !important;
+      border-bottom: 2px solid #6a3f7a !important;
+      padding: 4px 6px !important;
+    }
+    body.print-preview td {
+      color: #222 !important;
+      border-bottom: 1px solid #ddd !important;
+      padding: 4px 6px !important;
+    }
+    body.print-preview td input,
+    body.print-preview td select,
+    body.print-preview td textarea {
+      background: transparent !important;
+      border: 1px solid #ccc !important;
+      color: #222 !important;
+      text-shadow: none !important;
+      padding: 3px 5px !important;
+      font-size: 11px !important;
+    }
+    body.print-preview .pv-val { color: #222 !important; }
+    body.print-preview .tab-panel h3,
+    body.print-preview .tab-panel h4,
+    body.print-preview .stamp-caption,
+    body.print-preview .sign-off-overlay div:not(.sig-block):not([class]),
+    body.print-preview .sign-off-overlay > span {
+      color: #222 !important;
+      background: none !important;
+      -webkit-background-clip: unset !important;
+      background-clip: unset !important;
+      text-shadow: none !important;
+    }
+    body.print-preview .footer-note,
+    body.print-preview .tab-panel#panel-final .stamp-overlay {
+      background: #ffffff !important;
+      border-radius: 0 !important;
+    }
+    body.print-preview .sig-label { color: #333 !important; }
+    body.print-preview .sig-line,
+    body.print-preview .sig-date { color: #999 !important; }
+    body.print-preview .brand-logo,
+    body.print-preview .love-stamp,
+    body.print-preview .sign-off-stamp {
+      filter: none !important;
+      animation: none !important;
+    }
+    /* Sign-off love stamp: SMALLER size (was 400x179 / 280x125 on phones). */
+    body.print-preview .sign-off-stamp {
+      width: 260px !important;
+      height: 116px !important;
+      left: calc(79% + 28px) !important;
+      opacity: 0.35 !important;
+    }
     body.print-preview .tab-panel,
     body.print-preview .tab-panel:not(.active) {
       display: block !important;
@@ -1312,18 +1432,18 @@
       margin-bottom: 8px;
     }
 
-    /* Love stamp in the sign-off area: NORMAL size/format (same as the footer
-       love stamp), shifted to the RIGHT side (79% right) and displayed BEHIND
-       the text as a soft watermark. It floats behind the text so it never
-       shifts other items. */
+    /* Love stamp in the sign-off area: SMALLER watermark (was 400x179 — it
+       dominated the sign-off block) sitting BEHIND the sign-off text, nudged
+       slightly right, soft ink. It floats behind the text so it never shifts
+       other items. */
     .sign-off-overlay { position: relative; }
     .sign-off-stamp {
       position: absolute;        /* "behind text" format — watermark floats behind the sign-off text */
       left: calc(79% + 28px);    /* right-side position, nudged slightly further RIGHT */
       top: 50%;                  /* vertically centered within the sign-off area */
       transform: translate(-50%, -50%) rotate(-4deg);
-      width: 400px;              /* ENLARGED (was 300px, same as .love-stamp) */
-      height: 179px;             /* stamp art is 1536x1024 — keep native aspect ratio */
+      width: 260px;              /* SMALLER (was 400px) — 1536x1024 aspect kept */
+      height: 116px;             /* SMALLER (was 179px) */
       object-fit: contain;
       opacity: 0.35;             /* soft watermark so the text stays readable on top */
       z-index: 0;                /* BEHIND the sign-off text (text sits at z-index:1) */
@@ -1343,7 +1463,7 @@
       /* ENLARGED: bigger Soulmate logo on phones */
       .brand-logo { width: 190px; height: 190px; margin-bottom: 10px; }
       .love-stamp { width: 280px; height: 125px; left: 16px; }   /* ENLARGED (was 210x94), slight right nudge */
-      .sign-off-stamp { width: 280px; height: 125px; left: calc(79% + 16px); }  /* ENLARGED (was 210x94), still right side behind the text, nudged slightly right */
+      .sign-off-stamp { width: 200px; height: 89px; left: calc(79% + 16px); }  /* SMALLER sign-off stamp on phones (was 280x125), still right side behind the text */
       .password-box .brand-logo { width: 160px; height: 160px; }
       .sig-img { max-width: 100%; }   /* keep the enlarged signature inside the phone column */
     }
