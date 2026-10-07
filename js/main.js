@@ -1587,24 +1587,23 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
   table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 14px; border: 1px solid #ddd; }
   th { background: #7a4a8a; color: #fff; padding: 10px 12px; text-align: left; border-bottom: 2px solid #5a2a6a; }
   td { padding: 8px 12px; border-bottom: 1px solid #eee; color: #222; }
-  .footer { text-align: center; margin-top: 30px; color: #888; font-size: 13px; border-top: 1px solid #e0d0e8; padding-top: 20px; }
+  /* FOOTER — the love stamp now lives HERE (moved out of the sign-off area):
+     a table-based footer with the credit line on the left and the LOVE STAMP
+     on the RIGHT-HAND side at the bottom. Table + inline styles are used so
+     every email client keeps the stamp anchored to the right even when the
+     <style> block is stripped. */
+  .footer { margin-top: 30px; color: #888; font-size: 13px; border-top: 1px solid #e0d0e8; padding-top: 20px; }
+  .footer td.footer-credit { text-align: center; vertical-align: middle; color: #888; font-size: 13px; }
+  .footer td.footer-stamp-cell { text-align: right; vertical-align: bottom; width: 200px; }
+  img.footer-love-stamp { display: block; margin-left: auto; margin-right: 0; }
   .signature { display: flex; justify-content: space-around; margin-top: 20px; flex-wrap: wrap; position: relative; z-index: 1; }
   .signature div { min-width: 200px; text-align: left; }
   .signature img.sig { display: block; min-height: 56px; max-height: 72px; width: auto; max-width: 220px; margin: 2px 0 -8px 2px; }  /* COMPACT sign size — matches the on-screen & email signature scale */
-  /* SIGN-OFF SECTION — same format as the PDF/app: a SMALLER love stamp
-     watermark (260x116) sitting BEHIND the sign-off text and pinned to the
-     RIGHT-HAND side of the sign-off area (right edge flush, vertically
-     centered), soft ink (opacity 0.35, no glow), with the compact
-     signatures on top of it. */
+  /* SIGN-OFF SECTION — CHANGED: the love stamp watermark was REMOVED from the
+     sign-off area (it now lives in the email footer, right-hand side at the
+     bottom). The sign-off section only holds the centred heading and the two
+     compact signature columns. */
   .signoff-section { position: relative; text-align: center; overflow: hidden; }
-  /* PDF-style watermark — ALSO set as INLINE styles on the <img>, because most
-     email clients strip <style> blocks; the class covers browser viewing.
-     "Behind text" = absolute positioning at z-index:0 while the heading and
-     signature blocks sit at z-index:1. "Right hand side" = anchored to the
-     right edge of the sign-off section instead of being centered/offset. */
-  .stamp-watermark { display: block; position: absolute; left: auto; right: 0; top: 50%;
-    transform: translateY(-50%) rotate(-4deg); width: 260px; height: 116px; object-fit: contain;
-    opacity: 0.35; z-index: 0; pointer-events: none; margin: 0; border: none; background: transparent; }
   .signature-heading { position: relative; z-index: 1; }
   /* PDF-style sign-off dates: show today's date on the dotted line, same as the app/PDF */
   .sig-date { color: #999; white-space: nowrap; }
@@ -1642,18 +1641,30 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
   ${debriefTable ? `<h2>💬 Debrief Summary</h2>${debriefTable}` : ''}
   ${weeklyTable ? `<h2>📅 Weekly Reflection</h2>${weeklyTable}` : ''}
 
+  <!-- CHANGED: the love stamp was REMOVED from this sign-off area and now
+       lives in the email FOOTER below, pinned to the RIGHT-HAND side at the
+       bottom. The sign-off area only has the heading + the two signatures. -->
   <div class="signoff-section" style="margin-top:30px; border-top:2px solid #e8d5f0; padding-top:20px; position:relative; text-align:center; overflow:hidden;">
     <h2 class="signature-heading" style="position:relative; z-index:1;">✍️ Sign‑off</h2>
-    <img class="stamp-watermark" src="${STAMP_DATA_URL}" alt="Love Stamp" width="260" height="116" style="display:block; position:absolute; left:auto; right:0; top:50%; transform:translateY(-50%) rotate(-4deg); width:260px; max-width:260px; height:116px; object-fit:contain; opacity:0.35; z-index:0; margin:0; border:none;">
     <div class="signature" style="position:relative; z-index:1;">
       <div class="sig-block"><strong class="sig-label">${deep}'s Signature:</strong><img class="sig sig-img" src="${DEEP_SIGN_DATA_URL}" alt="${deep}'s Signature" style="display:block; min-height:56px; max-height:72px; width:auto; max-width:220px; margin:2px 0 -8px 2px;"><span class="sig-line" style="color:#999;">_________________</span>&nbsp;&nbsp;<span class="sig-date" style="color:#999;">${signoffDate}</span></div>
       <div class="sig-block"><strong class="sig-label">${honey}'s Signature:</strong><img class="sig sig-img" src="${HONEY_SIGN_DATA_URL}" alt="${honey}'s Signature" style="display:block; min-height:56px; max-height:72px; width:auto; max-width:220px; margin:2px 0 -8px 2px;"><span class="sig-line" style="color:#999;">_________________</span>&nbsp;&nbsp;<span class="sig-date" style="color:#999;">${signoffDate}</span></div>
     </div>
   </div>
 
-  <div class="footer">
-    <i>❤️ Created with love by ${deep} & ${honey} ❤️</i>
-  </div>
+  <!-- FOOTER: the love stamp moved here from the sign-off area — it sits on
+       the RIGHT-HAND side at the bottom of the email (all positioning is
+       inline + table-based so email clients cannot strip it). -->
+  <table class="footer" role="presentation" cellpadding="0" cellspacing="0" style="width:100%; border-collapse:collapse; margin-top:30px; border-top:1px solid #e0d0e8; padding-top:20px;">
+    <tr>
+      <td class="footer-credit" style="text-align:center; vertical-align:middle; color:#888; font-size:13px; padding:8px 12px; border:none;">
+        <i>❤️ Created with love by ${deep} &amp; ${honey} ❤️</i>
+      </td>
+      <td class="footer-stamp-cell" align="right" valign="bottom" width="200" style="text-align:right; vertical-align:bottom; width:200px; padding:8px 0 0 0; border:none;">
+        <img class="footer-love-stamp" src="${STAMP_DATA_URL}" alt="Love Stamp" width="180" height="81" align="right" hspace="0" vspace="0" border="0" style="display:block; margin-left:auto; margin-right:0; width:180px; max-width:180px; height:81px; object-fit:contain; transform:rotate(-4deg); opacity:0.9; border:none; background:transparent;">
+      </td>
+    </tr>
+  </table>
 </div>
 </body>
 </html>`;
