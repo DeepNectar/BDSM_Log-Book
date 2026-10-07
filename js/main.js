@@ -896,14 +896,14 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
       // ---- sign-off area & stamps ----------------------------------------
       '.footer-note,.tab-panel#panel-final .stamp-overlay{background:#ffffff!important;border-radius:0!important;padding:8px 4px!important;}',
       '.sign-off-overlay{position:relative!important;}',
-      '.sign-off-stamp{position:absolute!important;right:0!important;left:auto!important;top:50%!important;transform:translateY(-50%) rotate(-4deg)!important;width:260px!important;height:116px!important;object-fit:contain!important;opacity:0.35!important;z-index:0!important;pointer-events:none!important;margin:0!important;border:none!important;background:transparent!important;filter:none!important;animation:none!important;}',
+      '.sign-off-stamp{position:absolute!important;left:auto!important;right:0!important;top:50%!important;transform:translateY(-50%) rotate(-4deg)!important;width:260px!important;height:116px!important;object-fit:contain!important;opacity:0.35!important;z-index:0!important;pointer-events:none!important;margin:0!important;border:none!important;background:transparent!important;filter:none!important;animation:none!important;}',
       '.love-stamp{display:block!important;position:static!important;transform:rotate(-4deg)!important;width:300px!important;height:134px!important;object-fit:contain!important;margin:0 auto 10px auto!important;left:0!important;opacity:1!important;filter:none!important;animation:none!important;}',
       '.stamp-caption{color:#555!important;font-size:0.8rem!important;}',
       '.sig-img{display:block!important;min-height:56px!important;max-height:72px!important;width:auto!important;max-width:220px!important;margin:0 auto -8px auto!important;background:transparent!important;filter:none!important;}',
       '.sig-label{color:#333!important;}',
       '.sig-line,.sig-date{color:#999!important;}',
       // small-phone media rules in style.css resize the stamps; counter them
-      '@media (max-width:550px){.brand-logo,.password-box .brand-logo{width:150px!important;height:150px!important;}.love-stamp{width:300px!important;height:134px!important;left:0!important;}.sign-off-stamp{width:260px!important;height:116px!important;right:0!important;left:auto!important;}}',
+      '@media (max-width:550px){.brand-logo,.password-box .brand-logo{width:150px!important;height:150px!important;}.love-stamp{width:300px!important;height:134px!important;left:0!important;}.sign-off-stamp{width:260px!important;height:116px!important;left:auto!important;right:0!important;}}',
       '@media (max-width:380px){.brand-logo{width:130px!important;height:130px!important;}.log-header h1{font-size:1.2rem!important;}}',
       // final safety net: any wrapper we missed must never stay dark
       'html,body,.log-container,.log-header,.tab-panel,.table-wrap,table,tr,td,th,' +
@@ -1575,7 +1575,7 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
      "Behind text" = absolute positioning at z-index:0 while the heading and
      signature blocks sit at z-index:1. "Right hand side" = anchored to the
      right edge of the sign-off section instead of being centered/offset. */
-  .stamp-watermark { display: block; position: absolute; right: 0; left: auto; top: 50%;
+  .stamp-watermark { display: block; position: absolute; left: auto; right: 0; top: 50%;
     transform: translateY(-50%) rotate(-4deg); width: 260px; height: 116px; object-fit: contain;
     opacity: 0.35; z-index: 0; pointer-events: none; margin: 0; border: none; background: transparent; }
   .signature-heading { position: relative; z-index: 1; }
@@ -1617,7 +1617,7 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
 
   <div class="signoff-section" style="margin-top:30px; border-top:2px solid #e8d5f0; padding-top:20px; position:relative; text-align:center; overflow:hidden;">
     <h2 class="signature-heading" style="position:relative; z-index:1;">✍️ Sign‑off</h2>
-    <img class="stamp-watermark" src="${STAMP_DATA_URL}" alt="Love Stamp" width="260" height="116" style="display:block; position:absolute; right:0; left:auto; top:50%; transform:translateY(-50%) rotate(-4deg); width:260px; max-width:260px; height:116px; object-fit:contain; opacity:0.35; z-index:0; margin:0; border:none;">
+    <img class="stamp-watermark" src="${STAMP_DATA_URL}" alt="Love Stamp" width="260" height="116" style="display:block; position:absolute; left:auto; right:0; top:50%; transform:translateY(-50%) rotate(-4deg); width:260px; max-width:260px; height:116px; object-fit:contain; opacity:0.35; z-index:0; margin:0; border:none;">
     <div class="signature" style="position:relative; z-index:1;">
       <div class="sig-block"><strong class="sig-label">${deep}'s Signature:</strong><img class="sig sig-img" src="${DEEP_SIGN_DATA_URL}" alt="${deep}'s Signature" style="display:block; min-height:56px; max-height:72px; width:auto; max-width:220px; margin:2px 0 -8px 2px;"><span class="sig-line" style="color:#999;">_________________</span>&nbsp;&nbsp;<span class="sig-date" style="color:#999;">${signoffDate}</span></div>
       <div class="sig-block"><strong class="sig-label">${honey}'s Signature:</strong><img class="sig sig-img" src="${HONEY_SIGN_DATA_URL}" alt="${honey}'s Signature" style="display:block; min-height:56px; max-height:72px; width:auto; max-width:220px; margin:2px 0 -8px 2px;"><span class="sig-line" style="color:#999;">_________________</span>&nbsp;&nbsp;<span class="sig-date" style="color:#999;">${signoffDate}</span></div>

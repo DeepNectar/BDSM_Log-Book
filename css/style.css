@@ -613,8 +613,8 @@
       .sign-off-stamp {
         width: 260px !important;
         height: 116px !important;
-        right: 0 !important;
         left: auto !important;
+        right: 0 !important;
         position: absolute !important;
         z-index: 0 !important;
       }
@@ -770,8 +770,8 @@
     body.print-preview .sign-off-stamp {
       width: 260px !important;
       height: 116px !important;
-      right: 0 !important;       /* RIGHT-HAND side of the sign-off area */
-      left: auto !important;
+      left: auto !important;     /* RIGHT-HAND side of the sign-off area */
+      right: 0 !important;
       opacity: 0.35 !important;
       z-index: 0 !important;     /* "behind text" — watermark sits under the text */
     }
@@ -1447,8 +1447,8 @@
     .sign-off-overlay { position: relative; }
     .sign-off-stamp {
       position: absolute;        /* "behind text" format — watermark floats behind the sign-off text */
-      right: 0;                  /* RIGHT-HAND side of the sign-off area */
-      left: auto;                /* anchored to the right edge instead of an offset from the left */
+      left: auto;                /* RIGHT-HAND side of the sign-off area */
+      right: 0;                  /* anchored to the right edge instead of an offset from the left */
       top: 50%;                  /* vertically centered within the sign-off area */
       transform: translateY(-50%) rotate(-4deg);
       width: 260px;              /* SMALLER (was 400px) — 1536x1024 aspect kept */
@@ -1463,7 +1463,7 @@
       .sign-off-stamp { filter: none !important; }   /* plain ink on paper */
     }
 
-    /* Page margins adjusted so the left-side stamp and every item fit properly
+    /* Page margins adjusted so the right-side stamp and every item fit properly
        when saving/printing to PDF (no clipping, nothing spills off the page). */
     @page { margin: 16mm 18mm; }
     .log-container { margin-left: auto; margin-right: auto; overflow: visible; }
@@ -1472,7 +1472,7 @@
       /* ENLARGED: bigger Soulmate logo on phones */
       .brand-logo { width: 190px; height: 190px; margin-bottom: 10px; }
       .love-stamp { width: 280px; height: 125px; left: 16px; }   /* ENLARGED (was 210x94), slight right nudge */
-      .sign-off-stamp { width: 200px; height: 89px; right: 0; left: auto; }  /* SMALLER sign-off stamp on phones (was 280x125), still right side behind the text */
+      .sign-off-stamp { width: 200px; height: 89px; left: auto; right: 0; }  /* SMALLER sign-off stamp on phones (was 280x125), still right side behind the text */
       .password-box .brand-logo { width: 160px; height: 160px; }
       .sig-img { max-width: 100%; }   /* keep the enlarged signature inside the phone column */
     }
