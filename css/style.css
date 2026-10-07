@@ -608,15 +608,15 @@
         animation: none !important;
       }
       /* SMALLER love stamp in the sign-off area of the printed sheet / PDF
-         (was 400x179). Keeps the native 1536x1024 aspect ratio.
-         LEFT-HAND side, behind the text ("behind text" watermark format). */
+         (was 400x179). Keeps the native 1536x1024 aspect ratio. Pinned to the
+         LEFT-HAND side, BEHIND the text (z-index:0 vs. text at z-index:1). */
       .sign-off-stamp {
         width: 260px !important;
         height: 116px !important;
         left: 0 !important;
         right: auto !important;
+        position: absolute !important;
         z-index: 0 !important;
-        opacity: 0.35 !important;
       }
     }
 
@@ -770,10 +770,10 @@
     body.print-preview .sign-off-stamp {
       width: 260px !important;
       height: 116px !important;
-      left: 0 !important;
+      left: 0 !important;        /* LEFT-HAND side of the sign-off area */
       right: auto !important;
-      z-index: 0 !important;
       opacity: 0.35 !important;
+      z-index: 0 !important;     /* "behind text" — watermark sits under the text */
     }
     body.print-preview .tab-panel,
     body.print-preview .tab-panel:not(.active) {
