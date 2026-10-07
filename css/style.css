@@ -590,13 +590,19 @@
         font-size: 11px !important;
       }
       .tab-panel h3, .tab-panel h4, .log-header h1, .log-header .sub,
-      .stamp-caption, .sign-off-overlay div, .sign-off-overlay span {
+      .stamp-caption, .sign-off-overlay div:not(.sig-block):not([class]),
+      .sign-off-overlay > span {
         color: #222 !important;
         background: none !important;
         -webkit-background-clip: unset !important;
         background-clip: unset !important;
         text-shadow: none !important;
       }
+      /* keep the sign-off watermark soft (same as the PDF) and dark ink on the
+         signature labels / dotted line / date */
+      .sign-off-stamp { opacity: 0.35 !important; }
+      .sig-label { color: #333 !important; }
+      .sig-line, .sig-date { color: #999 !important; }
       .brand-logo, .love-stamp, .sign-off-stamp {
         filter: none !important;
         animation: none !important;
@@ -1265,9 +1271,11 @@
     .love-stamp {
       display: block;
       margin: 0 auto 10px auto;
-      width: 300px;
-      height: 134px;             /* stamp art is 1536x1024 — keep native aspect ratio */
+      width: 400px;              /* ENLARGED (was 300px) */
+      height: 179px;             /* stamp art is 1536x1024 — keep native aspect ratio */
       object-fit: contain;
+      position: relative;
+      left: 28px;                /* moved slightly to the right */
       transform: rotate(-4deg);
       opacity: 1;                /* fully visible normal image format */
       filter: drop-shadow(0 0 14px rgba(230, 90, 160, 0.35)) contrast(1.1) saturate(1.15);
@@ -1288,11 +1296,11 @@
     .sign-off-overlay { position: relative; }
     .sign-off-stamp {
       position: absolute;        /* "behind text" format — watermark floats behind the sign-off text */
-      left: 79%;                 /* moved to the right side — 79% from the left edge of the sign-off area */
+      left: calc(79% + 28px);    /* right-side position, nudged slightly further RIGHT */
       top: 50%;                  /* vertically centered within the sign-off area */
       transform: translate(-50%, -50%) rotate(-4deg);
-      width: 300px;              /* normal size (identical to .love-stamp) */
-      height: 134px;             /* stamp art is 1536x1024 — keep native aspect ratio */
+      width: 400px;              /* ENLARGED (was 300px, same as .love-stamp) */
+      height: 179px;             /* stamp art is 1536x1024 — keep native aspect ratio */
       object-fit: contain;
       opacity: 0.35;             /* soft watermark so the text stays readable on top */
       z-index: 0;                /* BEHIND the sign-off text (text sits at z-index:1) */
@@ -1311,8 +1319,8 @@
     @media (max-width: 550px) {
       /* ENLARGED: bigger Soulmate logo on phones */
       .brand-logo { width: 190px; height: 190px; margin-bottom: 10px; }
-      .love-stamp { width: 210px; height: 94px; }
-      .sign-off-stamp { width: 210px; height: 94px; }  /* scaled for narrow screens, still positioned at 79% (right side) behind the text */
+      .love-stamp { width: 280px; height: 125px; left: 16px; }   /* ENLARGED (was 210x94), slight right nudge */
+      .sign-off-stamp { width: 280px; height: 125px; left: calc(79% + 16px); }  /* ENLARGED (was 210x94), still right side behind the text, nudged slightly right */
       .password-box .brand-logo { width: 160px; height: 160px; }
       .sig-img { max-width: 100%; }   /* keep the enlarged signature inside the phone column */
     }
