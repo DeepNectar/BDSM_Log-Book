@@ -1282,12 +1282,13 @@
     }
 
     /* Love stamp in the sign-off area: NORMAL size/format (same as the footer
-       love stamp), centered inside the area and displayed BEHIND the text as a
-       soft watermark. It floats behind the text so it never shifts other items. */
+       love stamp), shifted to the RIGHT side (79% right) and displayed BEHIND
+       the text as a soft watermark. It floats behind the text so it never
+       shifts other items. */
     .sign-off-overlay { position: relative; }
     .sign-off-stamp {
       position: absolute;        /* "behind text" format — watermark floats behind the sign-off text */
-      left: 50%;                 /* horizontally centered inside the sign-off area */
+      left: 79%;                 /* moved to the right side — 79% from the left edge of the sign-off area */
       top: 50%;                  /* vertically centered within the sign-off area */
       transform: translate(-50%, -50%) rotate(-4deg);
       width: 300px;              /* normal size (identical to .love-stamp) */
@@ -1311,7 +1312,7 @@
       /* ENLARGED: bigger Soulmate logo on phones */
       .brand-logo { width: 190px; height: 190px; margin-bottom: 10px; }
       .love-stamp { width: 210px; height: 94px; }
-      .sign-off-stamp { width: 210px; height: 94px; }  /* scaled for narrow screens, still centered behind the text */
+      .sign-off-stamp { width: 210px; height: 94px; }  /* scaled for narrow screens, still positioned at 79% (right side) behind the text */
       .password-box .brand-logo { width: 160px; height: 160px; }
     }
 
