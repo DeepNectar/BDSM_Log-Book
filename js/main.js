@@ -896,6 +896,31 @@ const HONEY_SIGN_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAloAA
       // ---- sign-off area & stamps ----------------------------------------
       '.footer-note,.tab-panel#panel-final .stamp-overlay{background:#ffffff!important;border-radius:0!important;padding:8px 4px!important;}',
       '.sign-off-overlay,.signoff-section{position:relative!important;overflow:hidden!important;}',
+      // ---- sign-off layout: EXACT same format as the PDF sheet ------------
+      // The exported HTML code must mirror the PDF pixel-for-pixel: centred
+      // heading, two signature columns side by side (centred flex row), each
+      // column left-aligned with the ink resting on its dotted line and the
+      // "Date:" text right after the line. Without these rules the copied
+      // HTML fell back to raw inline styles (flex-wrap:wrap) and the two
+      // signature blocks stacked vertically instead of sitting side by side.
+      '.sign-off-overlay h4{text-align:center!important;position:relative!important;z-index:1!important;margin:0 0 10px 0!important;color:#333!important;text-shadow:none!important;}',
+      // The wrapper div carries inline "flex-wrap:wrap" — the shorthand
+      // `flex` property below overrides it (later shorthand resets wrap), so
+      // the two signature columns ALWAYS sit side by side, exactly like the
+      // PDF sheet (794px wide) instead of stacking on narrow screens.
+      '.sign-off-overlay>div{display:flex!important;flex:0 1 auto!important;flex-direction:row!important;flex-wrap:nowrap!important;justify-content:center!important;align-items:flex-start!important;gap:30px!important;margin-top:10px!important;position:relative!important;z-index:1!important;}',
+      '.sig-block{min-width:200px!important;text-align:left!important;}',
+      '.sig-label{display:inline-block!important;margin-bottom:2px!important;font-weight:600!important;}',
+      '.sig-date{white-space:nowrap!important;display:inline!important;}',
+      // Same sign-off format for the email-style ".signature/.signoff-section"
+      // markup (used by the Email HTML export and any copied fragment):
+      // centred heading, watermark behind, two compact columns side by side.
+      '.signoff-section{text-align:center!important;}',
+      '.signature-heading{text-align:center!important;position:relative!important;z-index:1!important;color:#333!important;}',
+      '.signature{display:flex!important;flex-wrap:nowrap!important;justify-content:center!important;gap:30px!important;position:relative!important;z-index:1!important;}',
+      '.signature .sig-block,.signature div{min-width:200px!important;text-align:left!important;}',
+      '.signature img.sig,.signature .sig-img{display:block!important;min-height:56px!important;max-height:72px!important;width:auto!important;max-width:220px!important;margin:2px 0 -8px 2px!important;}',
+      '.stamp-watermark{display:block!important;position:absolute!important;left:auto!important;right:0!important;top:50%!important;transform:translateY(-50%) rotate(-4deg)!important;width:260px!important;height:116px!important;object-fit:contain!important;opacity:0.35!important;z-index:0!important;pointer-events:none!important;margin:0!important;border:none!important;background:transparent!important;filter:none!important;}',
       // BUG FIX: the stamp <img> carries BOTH classes ("sign-off-stamp stamp-watermark");
       // style both selectors here so the exported print sheet can never miss one of them.
       '.sign-off-stamp,.stamp-watermark{display:block!important;position:absolute!important;left:auto!important;right:0!important;top:50%!important;transform:translateY(-50%) rotate(-4deg)!important;width:260px!important;height:116px!important;max-width:260px!important;object-fit:contain!important;opacity:0.35!important;z-index:0!important;pointer-events:none!important;margin:0!important;border:none!important;background:transparent!important;filter:none!important;animation:none!important;}',
