@@ -760,11 +760,13 @@
       filter: none !important;
       animation: none !important;
     }
-    /* Sign-off love stamp: SMALLER size (was 400x179 / 280x125 on phones). */
+    /* Sign-off love stamp: SMALLER size (was 400x179 / 280x125 on phones),
+       behind the text, pinned to the RIGHT-HAND side of the sign-off area. */
     body.print-preview .sign-off-stamp {
       width: 260px !important;
       height: 116px !important;
-      left: calc(79% + 28px) !important;
+      right: 0 !important;
+      left: auto !important;
       opacity: 0.35 !important;
     }
     body.print-preview .tab-panel,
@@ -1432,16 +1434,17 @@
       margin-bottom: 8px;
     }
 
-    /* Love stamp in the sign-off area: SMALLER watermark (was 400x179 — it
-       dominated the sign-off block) sitting BEHIND the sign-off text, nudged
-       slightly right, soft ink. It floats behind the text so it never shifts
-       other items. */
+    /* Love stamp in the sign-off area: SMALLER watermark (260x116) sitting
+       BEHIND the sign-off text and pinned to the RIGHT-HAND side of the
+       sign-off area (right edge flush, vertically centered), soft ink. It
+       floats behind the text so it never shifts other items. */
     .sign-off-overlay { position: relative; }
     .sign-off-stamp {
       position: absolute;        /* "behind text" format — watermark floats behind the sign-off text */
-      left: calc(79% + 28px);    /* right-side position, nudged slightly further RIGHT */
+      right: 0;                  /* RIGHT-HAND side of the sign-off area */
+      left: auto;                /* anchored to the right edge instead of an offset from the left */
       top: 50%;                  /* vertically centered within the sign-off area */
-      transform: translate(-50%, -50%) rotate(-4deg);
+      transform: translateY(-50%) rotate(-4deg);
       width: 260px;              /* SMALLER (was 400px) — 1536x1024 aspect kept */
       height: 116px;             /* SMALLER (was 179px) */
       object-fit: contain;
@@ -1463,7 +1466,7 @@
       /* ENLARGED: bigger Soulmate logo on phones */
       .brand-logo { width: 190px; height: 190px; margin-bottom: 10px; }
       .love-stamp { width: 280px; height: 125px; left: 16px; }   /* ENLARGED (was 210x94), slight right nudge */
-      .sign-off-stamp { width: 200px; height: 89px; left: calc(79% + 16px); }  /* SMALLER sign-off stamp on phones (was 280x125), still right side behind the text */
+      .sign-off-stamp { width: 200px; height: 89px; right: 0; left: auto; }  /* SMALLER sign-off stamp on phones (was 280x125), still right side behind the text */
       .password-box .brand-logo { width: 160px; height: 160px; }
       .sig-img { max-width: 100%; }   /* keep the enlarged signature inside the phone column */
     }
